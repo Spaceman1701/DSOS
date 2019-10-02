@@ -28,6 +28,7 @@ as I inevitably run out of time.
 - Garbage collected
 - Portable
 - First-class co-routines
+- No file system. Web applications don't need persistant storage. Maayybbee temportary serialization to the disk
 
 ## Motivation Sorta
 
@@ -42,4 +43,4 @@ Performance is difficult to measure and has many dimensions. I think the most in
 user code has to be sent to the machine after the kernal has started
 * Latency | In web use cases latency matters a lot for the end user. The amount of data being sent and recieved per-client isn't very high, but clients need to be served as fast as possible
 * IPC | A higher IPC means lower CPU usage to do the same task. For web use cases, CPU performance is often extermely limited (for example, the lowest tier AWS server has only 1 CPU)
-* Memory Usage | Linux can use nearly 1 GB of RAM in some configurations. For low-cost web servers, the system often has less than 1 GB total.
+* Memory Usage | Linux can use nearly 1 GB of RAM in some configurations. For low-cost web servers, the system often has less than 1 GB total (e.g. AWS t3.micro, the cheapest x86_64 instance has 2 CPUs and 512mb).
