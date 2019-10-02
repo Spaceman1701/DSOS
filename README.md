@@ -28,3 +28,18 @@ as I inevitably run out of time.
 - Garbage collected
 - Portable
 - First-class co-routines
+
+## Motivation Sorta
+
+Most Library OS projects focus on systems programming languages like C++. This is interesting, but most projects where a Library OS make
+sense are written in very high-level languages like Python or Java. I'd like to see if a performance improvment over Linux can be achieved
+for a very high-level language. 
+
+## Performance
+
+Performance is difficult to measure and has many dimensions. I think the most interesting measures of performance for this project will be:
+* Start-up time | This is important for serverless use-cases. Linux kernels can take an enmormous amount of time to boot up (relatively speaking). In addition, the actual
+user code has to be sent to the machine after the kernal has started
+* Latency | In web use cases latency matters a lot for the end user. The amount of data being sent and recieved per-client isn't very high, but clients need to be served as fast as possible
+* IPC | A higher IPC means lower CPU usage to do the same task. For web use cases, CPU performance is often extermely limited (for example, the lowest tier AWS server has only 1 CPU)
+* Memory Usage | Linux can use nearly 1 GB of RAM in some configurations. For low-cost web servers, the system often has less than 1 GB total.
