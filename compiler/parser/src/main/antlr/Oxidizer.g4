@@ -18,6 +18,11 @@ stmt
     | loop
     ;
 
+loop
+    : 'for' ident 'in' expr '{' stmt* '}'
+    | 'while' expr '{' stmt* '}'
+    ;
+
 expr
     : ident
     | expr '+' expr //begin: bin operators
@@ -33,6 +38,14 @@ expr
     | expr '++'
     | expr '--'
     | ident '(' (expr (',' expr)*)? ')' //function call
+    | comprehension
+    ;
+
+comprehension
+    : '[' ']' //empty
+    | '[' expr (',' expr)* ']' //literal list
+    | '[' expr 'for' ident 'in' expr 'if' expr ']' //for comprehension
+    | '[' expr ':' (expr)? (':' expr)? ']' //slice
     ;
 
 ident : NAME ;
