@@ -1,0 +1,26 @@
+plugins {
+    id 'scala'
+    id 'application'
+}
+
+compileScala.targetCompatibility = 1.8
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+mainClassName = 'io.github.spaceman1701.oxidizer.compiler.Main'
+
+dependencies {
+    implementation 'org.scala-lang:scala-library:2.13.1'
+    compile project(':parser')
+
+    testImplementation 'junit:junit:4.12'
+}
+
+
+tasks.withType(ScalaCompile) {
+    dependsOn compileJava
+    scalaCompileOptions.additionalParameters = ["-unchecked", "-deprecation", "-feature", "-Xfatal-warnings", "-language:reflectiveCalls"]
+}

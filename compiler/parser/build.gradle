@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+    id 'antlr'
+}
+
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir(new File(buildDir, 'parser'))
+        }
+    }
+}
+
+dependencies {
+    antlr 'org.antlr:antlr4:4.7.2'
+}
+
+generateGrammarSource {
+    arguments += ['-visitor', '-package', 'io.github.spaceman1701.oxidizer']
+    outputDirectory = new File(buildDir, 'parser/io/github/spaceman1701/oxidizer')
+}
