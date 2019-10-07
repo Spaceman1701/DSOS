@@ -12,15 +12,23 @@ decl
     | importdecl
     ;
 
+
+block : '{' stmt* '}';
+
 stmt
     : expr ';'
     | ident '=' expr ';'
     | loop
+    | branch
     ;
 
 loop
-    : 'for' ident 'in' expr '{' stmt* '}'
-    | 'while' expr '{' stmt* '}'
+    : KW_FOR ident KW_IN expr '{' stmt* '}'
+    | KW_WHILE expr block
+    ;
+
+branch
+    : KW_IF expr block (KW_ELIF expr block)* (KW_ELSE block)?
     ;
 
 expr
@@ -44,23 +52,34 @@ expr
 comprehension
     : '[' ']' //empty
     | '[' expr (',' expr)* ']' //literal list
-    | '[' expr 'for' ident 'in' expr 'if' expr ']' //for comprehension
+    | '[' expr KW_FOR ident KW_IN expr KW_IF expr ']' //for comprehension
     | '[' expr ':' (expr)? (':' expr)? ']' //slice
     ;
 
 ident : NAME ;
 
-typedecl : 'class' ;
+typedecl : KW_CLASS ;
 
-funcdecl : 'def' ;
+funcdecl : (KW_PRIVATE)? KW_DEF NAME '(' (NAME (',' NAME)*)? ')' block;
 
-importdecl : 'import';
+importdecl : KW_IMPORT;
 
 
 fragment UPPERCASE : [A-Z];
 fragment LOWERCASE : [a-z];
 fragment DIGIT : [0-9];
 // Lexer
+
+KW_PRIVATE : 'private';
+KW_DEF : 'def';
+KW_FOR : 'for';
+KW_IN: 'in';
+KW_WHILE: 'while';
+KW_IF: 'if';
+KW_ELIF: 'elif';
+KW_ELSE: 'else';
+KW_CLASS: 'class';
+KW_IMPORT: 'import';
 
 INTEGER : DIGIT+;
 NAME : (LOWERCASE | UPPERCASE) [a-zA-Z0-9_]*;
