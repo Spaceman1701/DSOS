@@ -3,8 +3,7 @@ grammar Oxidizer;
 // Parser
 
 module
-    : importdecl* //imports must be first
-    | decl+
+    : importdecl* decl+ //imports must be first
     ;
 
 decl
