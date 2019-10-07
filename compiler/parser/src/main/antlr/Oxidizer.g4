@@ -24,21 +24,25 @@ loop
     ;
 
 expr
-    : ident
-    | expr '+' expr //begin: bin operators
-    | expr '-' expr
-    | expr '*' expr
-    | expr '/' expr
-    | expr '%' expr
-    | expr '^' expr
-    | expr '^^' expr //begin: una ops
-    | '-' expr
-    | '~' expr
-    | '!' expr
-    | expr '++'
-    | expr '--'
-    | ident '(' (expr (',' expr)*)? ')' //function call
-    | comprehension
+    : ident # Var
+    | expr '+' expr # Add
+    | expr '-' expr # Sub
+    | expr '*' expr # Mul
+    | expr '/' expr # Div
+    | expr '%' expr # Mod
+    | expr '^' expr # Xor
+    | expr '&' expr # BAnd
+    | expr '|' expr # Bor
+    | expr '^^' expr # Pow
+    | expr 'and' expr # LAnd
+    | expr 'or' expr # Bor
+    | '-' expr # Neg
+    | '~' expr # Comp
+    | '!' expr # Inv
+    | expr '++' # Inc
+    | expr '--' # Dec
+    | ident '(' (expr (',' expr)*)? ')' # FunCall
+    | comprehension # ListComp
     ;
 
 comprehension
