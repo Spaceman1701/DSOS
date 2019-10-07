@@ -3,13 +3,13 @@ grammar Oxidizer;
 // Parser
 
 module
-    : decl+
+    : importdecl* //imports must be first
+    | decl+
     ;
 
 decl
     : typedecl
     | funcdecl
-    | importdecl
     ;
 
 
@@ -58,7 +58,9 @@ comprehension
 
 ident : NAME ;
 
-typedecl : KW_CLASS ;
+typedecl : KW_CLASS NAME '{' innerclass '}';
+
+innerclass : 'nothing';
 
 funcdecl : (KW_PRIVATE)? KW_DEF NAME '(' (NAME (',' NAME)*)? ')' block;
 
