@@ -12,7 +12,7 @@ repositories {
 sourceSets {
     main {
         java {
-            srcDir(new File(buildDir, 'parser'))
+            srcDir(new File(buildDir, 'antlr-src'))
         }
     }
 }
@@ -22,6 +22,6 @@ dependencies {
 }
 
 generateGrammarSource {
-    arguments += ['-visitor', '-package', 'io.github.spaceman1701.oxidizer']
-    outputDirectory = new File(buildDir, 'parser/io/github/spaceman1701/oxidizer')
+    arguments += ['-visitor', '-package', 'io.github.spaceman1701.oxidizer.parser']
+    outputDirectory = new File(buildDir, 'antlr-src/io/github/spaceman1701/oxidizer/parser')
 }
