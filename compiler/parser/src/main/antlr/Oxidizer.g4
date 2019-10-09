@@ -30,25 +30,33 @@ branch
     : KW_IF expr block (KW_ELIF expr block)* (KW_ELSE block)?
     ;
 
+
+compare_op : 'todo';
+
+
 expr
+    //Precedence 1
     : ident # Var
+    | ident '(' (expr (',' expr)*)? ')' # FunCall
     | '(' expr ')' # Parens
-    | expr OP_POW expr # Pow
+    | comprehension # ListComp
+    | expr OP_INC # Inc
+    | expr OP_DEC # Dec
+    //Precedence 2
+    | OP_MINUS expr # Neg
+    | (OP_NOT | OP_COMPLEMENT) expr # Not
+    | expr OP_POW<assoc=right> expr # Pow
+    //Precedence 3
+    | expr (OP_MUL | OP_DIV | OP_MOD) expr # MulModDiv
+    //Precedence 4
     | expr (OP_PLUS | OP_MINUS) expr # AddSub
-    | expr (OP_MUL | OP_DIV) expr # MulDiv
-    | expr OP_MOD expr # Mod
-    | expr OP_XOR expr # Xor
+    //Precedence 5
+    | expr (OP_LSHIFT | OP_RSHIFT) expr # Shift
     | expr OP_BAND expr # BAnd
+    | expr OP_XOR expr # Xor
     | expr OP_BOR expr # Bor
     | expr OP_AND expr # LAnd
     | expr OP_OR expr # Lor
-    | OP_MINUS expr # Neg
-    | OP_COMPLEMENT expr # Comp
-    | OP_NOT expr # Inv
-    | expr OP_INC # Inc
-    | expr OP_DEC # Dec
-    | ident '(' (expr (',' expr)*)? ')' # FunCall
-    | comprehension # ListComp
     ;
 
 comprehension
@@ -85,6 +93,17 @@ KW_ELSE: 'else';
 KW_CLASS: 'class';
 KW_IMPORT: 'import';
 
+
+OP_LSHIFT: '<<';
+OP_RSHIFT: '>>';
+
+COMP_EQ: '==';
+COMP_GE: '>=';
+COMP_LE: '<=';
+COMP_NE: '!=';
+COMP_G: '>';
+COMP_L: '<';
+
 OP_AND: 'and';
 OP_OR: 'or';
 OP_NOT: 'not';
@@ -101,18 +120,11 @@ OP_BOR: '|';
 OP_XOR: '^';
 OP_COMPLEMENT: '~';
 
-
-
-
-=======
-OP_COMP: '~';
-
 LPAREN: '(';
 RPAREN: ')';
 
 LBRACE: '{';
 RBRACE: '}';
->>>>>>> 4201309db53a7e251c0b6c431b16011cf7cb810c
 
 INTEGER : DIGIT+;
 NAME : (LOWERCASE | UPPERCASE) [a-zA-Z0-9_]*;
