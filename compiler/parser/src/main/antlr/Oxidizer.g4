@@ -31,7 +31,7 @@ branch
     ;
 
 
-compare_op : 'todo';
+compare_op : COMP_G | COMP_GE | COMP_L | COMP_LE;
 
 
 expr
@@ -45,18 +45,22 @@ expr
     //Precedence 2
     | OP_MINUS expr # Neg
     | (OP_NOT | OP_COMPLEMENT) expr # Not
-    | expr OP_POW<assoc=right> expr # Pow
+    | <assoc=right> expr OP_POW expr # Pow
     //Precedence 3
     | expr (OP_MUL | OP_DIV | OP_MOD) expr # MulModDiv
     //Precedence 4
     | expr (OP_PLUS | OP_MINUS) expr # AddSub
     //Precedence 5
+    | expr compare_op expr # Compare
+    | expr (COMP_EQ | COMP_NE) expr # EQTest
+    //Precedence 6
     | expr (OP_LSHIFT | OP_RSHIFT) expr # Shift
     | expr OP_BAND expr # BAnd
     | expr OP_XOR expr # Xor
     | expr OP_BOR expr # Bor
     | expr OP_AND expr # LAnd
     | expr OP_OR expr # Lor
+    | expr OP_INC expr # Concat
     ;
 
 comprehension
