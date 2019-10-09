@@ -32,22 +32,20 @@ branch
 
 expr
     : ident # Var
-    | expr '+' expr # Add
-    | expr '-' expr # Sub
-    | expr '*' expr # Mul
-    | expr '/' expr # Div
-    | expr '%' expr # Mod
-    | expr '^' expr # Xor
-    | expr '&' expr # BAnd
-    | expr '|' expr # Bor
-    | expr '^^' expr # Pow
-    | expr 'and' expr # LAnd
-    | expr 'or' expr # Bor
-    | '-' expr # Neg
-    | '~' expr # Comp
-    | '!' expr # Inv
-    | expr '++' # Inc
-    | expr '--' # Dec
+    | expr OP_POW expr # Pow
+    | expr (OP_PLUS | OP_MINUS) expr # AddSub
+    | expr (OP_MUL | OP_DIV) expr # MulDiv
+    | expr OP_MOD expr # Mod
+    | expr OP_XOR expr # Xor
+    | expr OP_BAND expr # BAnd
+    | expr OP_BOR expr # Bor
+    | expr OP_LAND expr # LAnd
+    | expr OP_LOR expr # Bor
+    | OP_MINUS expr # Neg
+    | OP_COMP expr # Comp
+    | OP_NOT expr # Inv
+    | expr OP_INC # Inc
+    | expr OP_DEC # Dec
     | ident '(' (expr (',' expr)*)? ')' # FunCall
     | comprehension # ListComp
     ;
@@ -85,6 +83,28 @@ KW_ELIF: 'elif';
 KW_ELSE: 'else';
 KW_CLASS: 'class';
 KW_IMPORT: 'import';
+
+OP_INC: '++';
+OP_DEC: '--';
+OP_LAND: 'and';
+OP_LOR: 'or';
+OP_NOT: 'not';
+OP_POW: '^^';
+OP_PLUS: '+';
+OP_MINUS: '-';
+OP_MUL: '*';
+OP_DIV: '/';
+OP_MOD: '%';
+OP_BAND: '&';
+OP_BOR: '|';
+OP_XOR: '^';
+OP_COMP: '~';
+
+LPAREN: '(';
+RPAREN: ')';
+
+LBRACE: '{';
+RBRACE: '}';
 
 INTEGER : DIGIT+;
 NAME : (LOWERCASE | UPPERCASE) [a-zA-Z0-9_]*;
