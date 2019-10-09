@@ -32,31 +32,30 @@ branch
 
 expr
     : ident # Var
-    | expr '+' expr # Add
-    | expr '-' expr # Sub
-    | expr '*' expr # Mul
-    | expr '/' expr # Div
-    | expr '%' expr # Mod
-    | expr '^' expr # Xor
-    | expr '&' expr # BAnd
-    | expr '|' expr # Bor
-    | expr '^^' expr # Pow
-    | expr 'and' expr # LAnd
-    | expr 'or' expr # Bor
-    | '-' expr # Neg
-    | '~' expr # Comp
-    | '!' expr # Inv
-    | expr '++' # Inc
-    | expr '--' # Dec
+    | '(' expr ')' # Parens
+    | expr OP_POW expr # Pow
+    | expr (OP_PLUS | OP_MINUS) expr # AddSub
+    | expr (OP_MUL | OP_DIV) expr # MulDiv
+    | expr OP_MOD expr # Mod
+    | expr OP_XOR expr # Xor
+    | expr OP_BAND expr # BAnd
+    | expr OP_BOR expr # Bor
+    | expr OP_AND expr # LAnd
+    | expr OP_OR expr # Lor
+    | OP_MINUS expr # Neg
+    | OP_COMPLEMENT expr # Comp
+    | OP_NOT expr # Inv
+    | expr OP_INC # Inc
+    | expr OP_DEC # Dec
     | ident '(' (expr (',' expr)*)? ')' # FunCall
     | comprehension # ListComp
     ;
 
 comprehension
-    : '[' ']' //empty
-    | '[' expr (',' expr)* ']' //literal list
-    | '[' expr KW_FOR ident KW_IN expr KW_IF expr ']' //for comprehension
-    | '[' expr ':' (expr)? (':' expr)? ']' //slice
+    : '[' ']' # EmptyList
+    | '[' expr (',' expr)* ']' # LiteralList
+    | '[' expr KW_FOR ident KW_IN expr KW_IF expr ']' # ForComp
+    | '[' expr ':' (expr)? (':' expr)? ']' # ListSlice
     ;
 
 ident : NAME ;
@@ -85,6 +84,26 @@ KW_ELIF: 'elif';
 KW_ELSE: 'else';
 KW_CLASS: 'class';
 KW_IMPORT: 'import';
+
+OP_AND: 'and';
+OP_OR: 'or';
+OP_NOT: 'not';
+OP_INC: '++';
+OP_DEC: '--';
+OP_POW: '^^';
+OP_PLUS: '+';
+OP_MINUS: '-';
+OP_MUL: '*';
+OP_DIV: '/';
+OP_MOD: '%';
+OP_BAND: '&';
+OP_BOR: '|';
+OP_XOR: '^';
+OP_COMPLEMENT: '~';
+
+
+
+
 
 INTEGER : DIGIT+;
 NAME : (LOWERCASE | UPPERCASE) [a-zA-Z0-9_]*;
