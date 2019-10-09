@@ -104,6 +104,15 @@ OP_COMPLEMENT: '~';
 
 
 
+=======
+OP_COMP: '~';
+
+LPAREN: '(';
+RPAREN: ')';
+
+LBRACE: '{';
+RBRACE: '}';
+>>>>>>> 4201309db53a7e251c0b6c431b16011cf7cb810c
 
 INTEGER : DIGIT+;
 NAME : (LOWERCASE | UPPERCASE) [a-zA-Z0-9_]*;
