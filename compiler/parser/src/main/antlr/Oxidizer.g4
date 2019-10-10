@@ -30,13 +30,14 @@ branch
     : KW_IF expr block (KW_ELIF expr block)* (KW_ELSE block)?
     ;
 
-
 compare_op : COMP_G | COMP_GE | COMP_L | COMP_LE;
 
+literall : INTEGER ;
 
 expr
     //Precedence 1
     : ident # Var
+    | literall # Lit
     | ident '(' (expr (',' expr)*)? ')' # FunCall
     | '(' expr ')' # Parens
     | comprehension # ListComp
@@ -61,13 +62,14 @@ expr
     | expr OP_AND expr # LAnd
     | expr OP_OR expr # Lor
     | expr OP_INC expr # Concat
+    | KW_IF expr KW_THEN expr KW_ELSE expr # Ternary
     ;
 
 comprehension
     : '[' ']' # EmptyList
     | '[' expr (',' expr)* ']' # LiteralList
-    | '[' expr KW_FOR ident KW_IN expr KW_IF expr ']' # ForComp
-    | '[' expr ':' (expr)? (':' expr)? ']' # ListSlice
+    | '[' expr KW_FOR ident KW_IN expr (KW_IF expr)? ']' # ForComp
+    | '[' (expr)? ':' (expr)? (':')? (expr)? ']' # ListSlice
     ;
 
 ident : NAME ;
@@ -96,6 +98,7 @@ KW_ELIF: 'elif';
 KW_ELSE: 'else';
 KW_CLASS: 'class';
 KW_IMPORT: 'import';
+KW_THEN: 'then';
 
 
 OP_LSHIFT: '<<';
