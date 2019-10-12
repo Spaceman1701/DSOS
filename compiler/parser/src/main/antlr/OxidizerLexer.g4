@@ -71,7 +71,5 @@ WS : [ \t\r\n]+ -> skip ; //skip whitespace
 mode STRING;
 
 ENTER_STR_EXPR: '${' -> pushMode(DEFAULT_MODE);
-
-TEXT: ~('\n'|'"')+;
-
 END_STRING: '"' -> popMode;
+TEXT: .+? ('${' | '"') ; //TODO: escape sequences... maybe another lexer mode?
