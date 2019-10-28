@@ -72,4 +72,4 @@ mode STRING;
 
 ENTER_STR_EXPR: '${' -> pushMode(DEFAULT_MODE);
 END_STRING: '"' -> popMode;
-TEXT: .+? ('${' | '"') ; //TODO: escape sequences... maybe another lexer mode?
+TEXT: ~('$' | '"' | '\n') ; //TODO: escape sequences... maybe another lexer mode?
