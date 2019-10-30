@@ -57,13 +57,13 @@ RSQUARE: ']';
 
 COMMA: ',';
 
-
 ENTER_STRING: '"' -> pushMode(STRING);
 
 LBRACE: '{' -> pushMode(DEFAULT_MODE);
 RBRACE: '}' -> popMode;
 
 INTEGER : DIGIT+;
+FLOAT: DIGIT+ ('.' DIGIT* 'f'? | 'f');
 NAME : (LOWERCASE | UPPERCASE) [a-zA-Z0-9_]*;
 
 WS : [ \t\r\n]+ -> skip ; //skip whitespace
@@ -72,4 +72,4 @@ mode STRING;
 
 ENTER_STR_EXPR: '${' -> pushMode(DEFAULT_MODE);
 END_STRING: '"' -> popMode;
-TEXT: ~('$' | '"' | '\n') ; //TODO: escape sequences... maybe another lexer mode?
+TEXT: ~('$' | '"' | '\n')+ ; //TODO: escape sequences... maybe another lexer mode?

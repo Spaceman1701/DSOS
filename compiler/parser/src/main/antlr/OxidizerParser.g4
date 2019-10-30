@@ -42,7 +42,10 @@ stringPart
     ;
 
 literall
-    : INTEGER ;
+    : INTEGER # IntLit
+    | FLOAT # FloatLit
+    | string # StringLit
+    ;
 
 expr
     //Precedence 1
