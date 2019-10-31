@@ -5,12 +5,12 @@ options {tokenVocab = OxidizerLexer;}
 // Parser
 
 module
-    : importdecl* decl+ //imports must be first
+    : importdecl* decl+ # ModuleDef//imports must be first
     ;
 
 decl
-    : typedecl
-    | funcdecl
+    : KW_CLASS NAME LBRACE innerclass RBRACE #TypeDecl
+    | funcdecl #FuncDecl
     ;
 
 
@@ -88,10 +88,8 @@ comprehension
 
 ident : NAME ;
 
-typedecl : KW_CLASS NAME LBRACE innerclass RBRACE;
+funcdecl: (KW_PRIVATE)? KW_DEF NAME LPAREN (NAME (COMMA NAME)*)? RPAREN block;
 
 innerclass : funcdecl*;
-
-funcdecl : (KW_PRIVATE)? KW_DEF NAME LPAREN (NAME (COMMA NAME)*)? RPAREN block;
 
 importdecl : KW_IMPORT NAME;
