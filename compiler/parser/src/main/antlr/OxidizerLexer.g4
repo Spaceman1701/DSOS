@@ -17,6 +17,7 @@ KW_ELSE: 'else';
 KW_CLASS: 'class';
 KW_IMPORT: 'import';
 KW_THEN: 'then';
+KW_RETURN: 'return';
 
 
 OP_LSHIFT: '<<';

@@ -21,6 +21,7 @@ stmt
     | ident OP_ASSIGN expr SEMI
     | loop
     | branch
+    | KW_RETURN expr SEMI
     ;
 
 loop
@@ -89,8 +90,8 @@ ident : NAME ;
 
 typedecl : KW_CLASS NAME LBRACE innerclass RBRACE;
 
-innerclass : expr;
+innerclass : funcdecl*;
 
 funcdecl : (KW_PRIVATE)? KW_DEF NAME LPAREN (NAME (COMMA NAME)*)? RPAREN block;
 
-importdecl : KW_IMPORT;
+importdecl : KW_IMPORT NAME;
