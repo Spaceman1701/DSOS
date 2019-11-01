@@ -18,6 +18,8 @@ KW_CLASS: 'class';
 KW_IMPORT: 'import';
 KW_THEN: 'then';
 KW_RETURN: 'return';
+KW_CASE: 'case';
+KW_SWITCH: 'switch';
 
 
 OP_LSHIFT: '<<';

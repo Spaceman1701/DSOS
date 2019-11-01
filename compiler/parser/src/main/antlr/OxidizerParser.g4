@@ -17,21 +17,25 @@ decl
 block : LBRACE stmt* RBRACE;
 
 stmt
-    : expr SEMI
-    | ident OP_ASSIGN expr SEMI
-    | loop
-    | branch
-    | KW_RETURN expr SEMI
+    : expr SEMI #ExprStmt
+    | ident OP_ASSIGN expr SEMI #AssignStmt
+    | loop #LoopStmt
+    | branch #BranchStmt
+    | KW_RETURN expr SEMI #ReturnStmt
     ;
 
 loop
-    : KW_FOR ident KW_IN expr LBRACE stmt* RBRACE
-    | KW_WHILE expr block
+    : KW_FOR ident KW_IN expr LBRACE stmt* RBRACE #ForLoop
+    | KW_WHILE expr block #WhileLoop
     ;
 
 branch
-    : KW_IF expr block (KW_ELIF expr block)* (KW_ELSE block)?
+    : KW_IF expr block (elif)* (KW_ELSE block)?
+    | KW_SWITCH expr RBRACE (switch_case)+ LBRACE
     ;
+
+switch_case: KW_CASE (ident | literall) block;
+elif: KW_ELIF expr block;
 
 compare_op : COMP_G | COMP_GE | COMP_L | COMP_LE;
 
