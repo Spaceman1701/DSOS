@@ -3,14 +3,16 @@ parser grammar OxidizerParser;
 options {tokenVocab = OxidizerLexer;}
 
 // Parser
+program : module EOF;
+
 
 module
-    : importdecl* decl+ # ModuleDef//imports must be first
+    : importdecl* decl* # ModuleDef//imports must be first
     ;
 
 decl
     : KW_CLASS NAME LBRACE innerclass RBRACE #TypeDecl
-    | funcdecl #FuncDecl
+    | funcdef #FuncDecl
     ;
 
 
@@ -86,14 +88,14 @@ expr
 comprehension
     : LSQUARE RSQUARE # EmptyList
     | LSQUARE expr (COMMA expr)* RSQUARE # LiteralList
-    | LSQUARE expr KW_FOR ident KW_IN expr (KW_IF expr)? RSQUARE # ForComp
-    | LSQUARE (expr)? COLON (expr)? (COLON)? (expr)? RSQUARE # ListSlice
+    | LSQUARE ele=expr KW_FOR ident KW_IN inExpr=expr (KW_IF cond=expr)? RSQUARE # ForComp
+    | LSQUARE (start=expr)? COLON (end=expr)? (COLON)? (step=expr)? RSQUARE # ListSlice
     ;
 
 ident : NAME ;
 
-funcdecl: (KW_PRIVATE)? KW_DEF NAME LPAREN (NAME (COMMA NAME)*)? RPAREN block;
+funcdef: (KW_PRIVATE)? KW_DEF NAME LPAREN (NAME (COMMA NAME)*)? RPAREN block;
 
-innerclass : funcdecl*;
+innerclass : funcdef*;
 
-importdecl : KW_IMPORT NAME;
+importdecl : KW_IMPORT NAME SEMI;
