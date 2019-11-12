@@ -30,8 +30,8 @@ loop
     ;
 
 branch
-    : KW_IF expr block (elif)* (KW_ELSE block)?
-    | KW_SWITCH expr RBRACE (switch_case)+ LBRACE
+    : KW_IF expr ifBody=block (elif)* (KW_ELSE elseBody=block)? #IfBranch
+    | KW_SWITCH expr RBRACE (switch_case)+ LBRACE #SwitchBranch
     ;
 
 switch_case: KW_CASE (ident | literall) block;
