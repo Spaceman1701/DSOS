@@ -56,7 +56,13 @@ class ParseTreeConverter extends OxidizerParserBaseVisitor[AST] {
   }
 
   override def visitAssignStmt(ctx: OxidizerParser.AssignStmtContext): AssignStmt = {
-    AssignStmt(ctx.ident().NAME().getSymbol.getText, visit(ctx.expr()).asInstanceOf[Expr])
+    AssignStmt(ctx.ident().NAME().getSymbol.getText, visitExpr(ctx.expr()))
+  }
+
+  override def visitDestructAssginStmt(ctx: OxidizerParser.DestructAssginStmtContext): DestructerAssignStmt = {
+    val idents = ctx.ident().asScala.toList.map(_.NAME().getText)
+    val expr = visitExpr(ctx.expr())
+    DestructerAssignStmt(idents, expr)
   }
 
   override def visitLoopStmt(ctx: OxidizerParser.LoopStmtContext): LoopStmt = {
@@ -293,11 +299,12 @@ class ParseTreeConverter extends OxidizerParserBaseVisitor[AST] {
     ForComp(ele, iterator, inExpr, cond)
   }
 
-  override def visitListSlice(ctx: OxidizerParser.ListSliceContext): ListSlice = {
+  override def visitArrayIndex(ctx: OxidizerParser.ArrayIndexContext): ArrayIndex = {
+    val arrayExpr = visitExpr(ctx.expr(0))
     val start = if (ctx.start != null) Option.apply(visitExpr(ctx.start)) else Option.empty
     val end = if (ctx.end != null) Option.apply(visitExpr(ctx.end)) else Option.empty
     val step = if (ctx.step != null) Option.apply(visitExpr(ctx.step)) else Option.empty
-    ListSlice(start, end, step)
+    ArrayIndex(arrayExpr, start, end, step)
   }
 
   override def visitFuncdef(ctx: OxidizerParser.FuncdefContext): FunctionDef = {

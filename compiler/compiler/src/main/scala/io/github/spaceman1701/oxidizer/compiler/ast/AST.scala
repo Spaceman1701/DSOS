@@ -15,6 +15,7 @@ case class FunctionDecl(functionDef: FunctionDef) extends Decl
 sealed trait Stmt extends AST
 case class ExprStmt(expr: Expr) extends Stmt
 case class AssignStmt(ident: String, expr: Expr) extends Stmt
+case class DestructerAssignStmt(idents: List[String], expr: Expr) extends Stmt
 case class LoopStmt(loop: Loop) extends Stmt
 case class BranchStmt(branch: Branch) extends Stmt
 case class ReturnStmt(expr: Expr) extends Stmt
@@ -48,6 +49,7 @@ case class StringLit(parts: List[StringPart]) extends Literal
 
 sealed trait Expr extends AST
 case class Var(ident: String) extends Expr
+case class ArrayIndex(arrayExpr: Expr, start: Option[Expr], end: Option[Expr], step: Option[Expr]) extends Expr
 case class Lit(literal: Literal) extends Expr
 case class FunCall(ident: String, params: List[Expr]) extends Expr
 case class Parens(expr: Expr) extends Expr
@@ -61,7 +63,6 @@ sealed trait Comprehension extends AST
 case class EmptyList() extends Comprehension
 case class LiteralList(elements: List[Expr]) extends Comprehension
 case class ForComp(ele: Expr, iterator: String, inExpr: Expr, cond: Option[Expr]) extends Comprehension
-case class ListSlice(start: Option[Expr], end: Option[Expr], step: Option[Expr]) extends Comprehension
 
 
 sealed trait ClassItem extends AST

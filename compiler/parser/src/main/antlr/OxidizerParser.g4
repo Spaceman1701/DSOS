@@ -21,6 +21,7 @@ block : LBRACE stmt* RBRACE;
 stmt
     : expr SEMI #ExprStmt
     | ident OP_ASSIGN expr SEMI #AssignStmt
+    | ident (COMMA ident)+ OP_ASSIGN expr SEMI #DestructAssginStmt
     | loop #LoopStmt
     | branch #BranchStmt
     | KW_RETURN expr SEMI #ReturnStmt
@@ -60,6 +61,7 @@ expr
     //Precedence 1
     : ident # Var
     | literall # Lit
+    | expr LSQUARE (start=expr)? (COLON)? (end=expr)? (COLON)? (step=expr)? RSQUARE # ArrayIndex
     | ident LPAREN (expr (COMMA expr)*)? RPAREN # FunCall
     | LPAREN expr RPAREN # Parens
     | comprehension # ListComp
@@ -91,7 +93,6 @@ comprehension
     : LSQUARE RSQUARE # EmptyList
     | LSQUARE expr (COMMA expr)* RSQUARE # LiteralList
     | LSQUARE ele=expr KW_FOR ident KW_IN inExpr=expr (KW_IF cond=expr)? RSQUARE # ForComp
-    | LSQUARE (start=expr)? COLON (end=expr)? (COLON)? (step=expr)? RSQUARE # ListSlice
     ;
 
 ident : NAME ;

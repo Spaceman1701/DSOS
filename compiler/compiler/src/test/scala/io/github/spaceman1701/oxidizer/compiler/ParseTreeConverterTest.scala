@@ -55,4 +55,41 @@ class ParseTreeConverterTest {
       }
     }
   }
+
+  @Test
+  def testTupleAssignment(): Unit = {
+    val input =
+      "def function() {\n" +
+      "  a, b, c = [12, 8 * 8, foobar()[32]];\n" +
+      "}"
+    val stream = new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8))
+    val lexer = new OxidizerLexer(CharStreams.fromStream(stream, StandardCharsets.UTF_8))
+    val parser = new OxidizerParser(new CommonTokenStream(lexer))
+    val module = new ParseTreeConverter().visitProgram(parser.program())
+    assertNotNull(module)
+
+    module match {
+      case ModuleDef(_, decls) => {
+        decls(0) match {
+          case FunctionDecl(FunctionDef(_, _, _, body)) => {
+            val stmt = body(0)
+            stmt match {
+              case DestructerAssignStmt(idents, expr) => {
+                assertEquals("there are three variables", 3, idents.length)
+                assertEquals("the first variable is a", "a", idents(0))
+                expr match {
+                  case ListComp(LiteralList(exprs)) => {
+                    assertEquals("three list elements", 3, exprs.length)
+                  }
+                  case _ => fail("expr wrong type")
+                }
+              }
+              case _ => fail("statement wrong type")
+            }
+          }
+          case _ => fail("no function decl")
+        }
+      }
+    }
+  }
 }
