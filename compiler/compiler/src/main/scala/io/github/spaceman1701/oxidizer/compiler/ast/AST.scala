@@ -18,6 +18,8 @@ case class AssignStmt(ident: String, expr: Expr) extends Stmt
 case class LoopStmt(loop: Loop) extends Stmt
 case class BranchStmt(branch: Branch) extends Stmt
 case class ReturnStmt(expr: Expr) extends Stmt
+case object BreakStmt extends Stmt
+case object ContinueStmt extends Stmt
 
 
 sealed trait Loop extends AST
@@ -85,6 +87,7 @@ case object LogicalOr extends BinaryOperator
 case object XOr extends BinaryOperator
 case object BitwiseAnd extends BinaryOperator
 case object BitwiseOr extends BinaryOperator
+case object UnsignedRightShift extends BinaryOperator
 case object LeftShift extends BinaryOperator
 case object RightShift extends BinaryOperator
 case object Modulo extends BinaryOperator

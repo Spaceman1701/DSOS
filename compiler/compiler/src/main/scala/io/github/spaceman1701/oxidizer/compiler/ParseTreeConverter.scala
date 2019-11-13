@@ -38,6 +38,10 @@ class ParseTreeConverter extends OxidizerParserBaseVisitor[AST] {
     ClassField(isPrivate, name, initExpr)
   }
 
+  override def visitBreakStmt(ctx: OxidizerParser.BreakStmtContext): Stmt = BreakStmt
+
+  override def visitContinueStmt(ctx: OxidizerParser.ContinueStmtContext): Stmt = ContinueStmt
+
   override def visitFuncDecl(ctx: OxidizerParser.FuncDeclContext): FunctionDecl = {
     val f = ctx.funcdef()
     FunctionDecl(visitFuncdef(f))
@@ -158,8 +162,10 @@ class ParseTreeConverter extends OxidizerParserBaseVisitor[AST] {
   override def visitShift(ctx: OxidizerParser.ShiftContext): Binop = {
     val operator = if (ctx.OP_LSHIFT() != null) {
       LeftShift
-    } else {
+    } else if (ctx.OP_RSHIFT() != null) {
       RightShift
+    } else {
+      UnsignedRightShift
     }
     visitBinop(ctx.expr(0), ctx.expr(1), operator)
   }

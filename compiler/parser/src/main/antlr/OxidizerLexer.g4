@@ -20,10 +20,13 @@ KW_THEN: 'then';
 KW_RETURN: 'return';
 KW_CASE: 'case';
 KW_SWITCH: 'switch';
+KW_BREAK: 'break';
+KW_CONTINUE: 'continue';
 
 
 OP_LSHIFT: '<<';
 OP_RSHIFT: '>>';
+OP_RSHIFT_UNSIGNED: '>>>';
 
 COMP_EQ: '==';
 COMP_GE: '>=';

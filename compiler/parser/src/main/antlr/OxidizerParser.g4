@@ -24,6 +24,8 @@ stmt
     | loop #LoopStmt
     | branch #BranchStmt
     | KW_RETURN expr SEMI #ReturnStmt
+    | KW_BREAK SEMI #BreakStmt
+    | KW_CONTINUE SEMI #ContinueStmt
     ;
 
 loop
@@ -75,7 +77,7 @@ expr
     | expr compare_op expr # Compare
     | expr (COMP_EQ | COMP_NE) expr # EQTest
     //Precedence 6
-    | expr (OP_LSHIFT | OP_RSHIFT) expr # Shift
+    | expr (OP_LSHIFT | OP_RSHIFT | OP_RSHIFT_UNSIGNED) expr # Shift
     | expr OP_BAND expr # BAnd
     | expr OP_XOR expr # Xor
     | expr OP_BOR expr # Bor
