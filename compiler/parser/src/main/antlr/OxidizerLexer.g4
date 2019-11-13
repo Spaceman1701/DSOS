@@ -67,7 +67,7 @@ RBRACE: '}' -> popMode;
 
 INTEGER : DIGIT+;
 FLOAT: DIGIT+ ('.' DIGIT* 'f'? | 'f');
-NAME : (LOWERCASE | UPPERCASE) [a-zA-Z0-9_]*;
+NAME : (LOWERCASE | UPPERCASE) [a-zA-Z0-9_.]*;
 
 WS : [ \t\r\n]+ -> skip ; //skip whitespace
 
