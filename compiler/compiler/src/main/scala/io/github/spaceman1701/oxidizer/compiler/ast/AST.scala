@@ -8,7 +8,7 @@ case class ModuleDef(imports: List[ImportDecl], decls: List[Decl]) extends Modul
 
 
 sealed trait Decl extends AST
-case class ClassDecl(name: String, methods: List[FunctionDecl]) extends Decl
+case class ClassDecl(name: String, members: List[ClassItem]) extends Decl
 case class FunctionDecl(functionDef: FunctionDef) extends Decl
 
 
@@ -60,6 +60,11 @@ case class EmptyList() extends Comprehension
 case class LiteralList(elements: List[Expr]) extends Comprehension
 case class ForComp(ele: Expr, iterator: String, inExpr: Expr, cond: Option[Expr]) extends Comprehension
 case class ListSlice(start: Option[Expr], end: Option[Expr], step: Option[Expr]) extends Comprehension
+
+
+sealed trait ClassItem extends AST
+case class ClassMethod(func: FunctionDef) extends ClassItem
+case class ClassField(isPrivate: Boolean, name: String, initExpr: Option[Expr]) extends ClassItem
 
 
 case class FunctionDef(isPrivate: Boolean, name: String, params: List[String], body: List[Stmt]) extends AST

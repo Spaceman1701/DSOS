@@ -11,7 +11,7 @@ module
     ;
 
 decl
-    : KW_CLASS NAME LBRACE innerclass RBRACE #TypeDecl
+    : KW_CLASS NAME LBRACE classitem* RBRACE #TypeDecl
     | funcdef #FuncDecl
     ;
 
@@ -96,6 +96,9 @@ ident : NAME ;
 
 funcdef: (KW_PRIVATE)? KW_DEF NAME LPAREN (NAME (COMMA NAME)*)? RPAREN block;
 
-innerclass : funcdef*;
+classitem
+    : funcdef #ClassMethod
+    | KW_PRIVATE? NAME (OP_ASSIGN expr)? SEMI #ClassField
+    ;
 
 importdecl : KW_IMPORT NAME SEMI;

@@ -19,8 +19,23 @@ class ParseTreeConverter extends OxidizerParserBaseVisitor[AST] {
   }
 
   override def visitTypeDecl(ctx: OxidizerParser.TypeDeclContext): ClassDecl = {
-    val innerClass = ctx.innerclass().funcdef().asScala.toList.map(visitFuncdef).map(FunctionDecl)
-    ClassDecl(ctx.NAME().getSymbol.getText, innerClass)
+    def items = ctx.classitem().asScala.toList.map(visit).asInstanceOf[List[ClassItem]]
+    ClassDecl(ctx.NAME().getSymbol.getText, items)
+  }
+
+  override def visitClassMethod(ctx: OxidizerParser.ClassMethodContext): ClassMethod = {
+    ClassMethod(visitFuncdef(ctx.funcdef()))
+  }
+
+  override def visitClassField(ctx: OxidizerParser.ClassFieldContext): ClassField = {
+    val isPrivate = ctx.KW_PRIVATE() != null
+    val name = ctx.NAME().getText
+    val initExpr = if (ctx.expr() != null) {
+      Option.apply(visitExpr(ctx.expr()))
+    } else {
+      Option.empty
+    }
+    ClassField(isPrivate, name, initExpr)
   }
 
   override def visitFuncDecl(ctx: OxidizerParser.FuncDeclContext): FunctionDecl = {
