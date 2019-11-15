@@ -1,13 +1,13 @@
 package io.github.spaceman1701.oxidizer.compiler.bytecode
 
 sealed trait Instruction {
-  case class Store(loc: Long) extends Instruction
+  case class Store(loc: Long) extends Instruction //objref | value -> [] (convert to objref and place on data stack)
   case class LoadConst(value: Long) extends Instruction
   case class LoadVar(loc: Long) extends Instruction
 
   case object LoadArray extends Instruction //objref, index -> objref
 
-  case object Add extends Instruction
+  case object Add extends Instruction //objref, objref -> value
   case object Sub extends Instruction
   case object Mul extends Instruction
   case object Div extends Instruction
