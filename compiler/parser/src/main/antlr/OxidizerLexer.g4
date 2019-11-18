@@ -22,6 +22,9 @@ KW_CASE: 'case';
 KW_SWITCH: 'switch';
 KW_BREAK: 'break';
 KW_CONTINUE: 'continue';
+KW_SPAWN: 'spwan';
+KW_LISTEN: 'listen';
+KW_SEND: 'send';
 
 
 OP_LSHIFT: '<<';

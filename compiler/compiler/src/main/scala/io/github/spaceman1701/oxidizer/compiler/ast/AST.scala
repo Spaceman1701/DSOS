@@ -21,6 +21,7 @@ case class BranchStmt(branch: Branch) extends Stmt
 case class ReturnStmt(expr: Expr) extends Stmt
 case object BreakStmt extends Stmt
 case object ContinueStmt extends Stmt
+case class SpawnStmt(expr: Expr) extends Stmt
 
 
 sealed trait Loop extends AST
@@ -57,6 +58,8 @@ case class ListComp(comp: Comprehension) extends Expr
 case class Unop(expr: Expr, Op: UnaryOperator) extends Expr
 case class Binop(first: Expr, second: Expr, Op: BinaryOperator) extends Expr
 case class Ternary(cond: Expr, ifExpr: Expr, elseExpr: Expr) extends Expr
+case class SendExpr(expr: Expr) extends Expr
+case class ListenExpr(expr: Expr) extends Expr
 
 
 sealed trait Comprehension extends AST

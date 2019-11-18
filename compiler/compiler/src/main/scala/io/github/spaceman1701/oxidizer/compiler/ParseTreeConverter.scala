@@ -42,6 +42,10 @@ class ParseTreeConverter extends OxidizerParserBaseVisitor[AST] {
 
   override def visitContinueStmt(ctx: OxidizerParser.ContinueStmtContext): Stmt = ContinueStmt
 
+  override def visitSpawnStmt(ctx: OxidizerParser.SpawnStmtContext): SpawnStmt = {
+    SpawnStmt(visitExpr(ctx.expr()))
+  }
+
   override def visitFuncDecl(ctx: OxidizerParser.FuncDeclContext): FunctionDecl = {
     val f = ctx.funcdef()
     FunctionDecl(visitFuncdef(f))
@@ -305,6 +309,14 @@ class ParseTreeConverter extends OxidizerParserBaseVisitor[AST] {
     val end = if (ctx.end != null) Option.apply(visitExpr(ctx.end)) else Option.empty
     val step = if (ctx.step != null) Option.apply(visitExpr(ctx.step)) else Option.empty
     ArrayIndex(arrayExpr, start, end, step)
+  }
+
+  override def visitSendExpr(ctx: OxidizerParser.SendExprContext): SendExpr = {
+    SendExpr(visitExpr(ctx.expr()))
+  }
+
+  override def visitListenExpr(ctx: OxidizerParser.ListenExprContext): ListenExpr = {
+    ListenExpr(visitExpr(ctx.expr()))
   }
 
   override def visitFuncdef(ctx: OxidizerParser.FuncdefContext): FunctionDef = {

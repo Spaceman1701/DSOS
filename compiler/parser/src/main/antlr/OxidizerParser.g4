@@ -24,6 +24,7 @@ stmt
     | ident (COMMA ident)+ OP_ASSIGN expr SEMI #DestructAssginStmt
     | loop #LoopStmt
     | branch #BranchStmt
+    | KW_SPAWN expr SEMI #SpawnStmt
     | KW_RETURN expr SEMI #ReturnStmt
     | KW_BREAK SEMI #BreakStmt
     | KW_CONTINUE SEMI #ContinueStmt
@@ -87,6 +88,8 @@ expr
     | expr OP_OR expr # Lor
     | expr OP_INC expr # Concat
     | KW_IF expr KW_THEN expr KW_ELSE expr # Ternary
+    | KW_SEND expr # SendExpr
+    | KW_LISTEN expr # ListenExpr
     ;
 
 comprehension
