@@ -6,7 +6,9 @@ sealed trait Instruction {
   Basic Load/Store instructions. For simplicity only wide insturctions.
    */
   case class Store(loc: Long) extends Instruction //objref | value -> [] (convert to objref and place on data stack)
-  case class LoadConst(value: Long) extends Instruction
+  case class LoadConstInt(value: Long) extends Instruction
+  case class LoadConstFloat(value: Double) extends Instruction
+  case class LoadConstStr(ptr: Long) extends Instruction //load a string from the constant string areas
   case class LoadVar(loc: Long) extends Instruction
 
   /*
