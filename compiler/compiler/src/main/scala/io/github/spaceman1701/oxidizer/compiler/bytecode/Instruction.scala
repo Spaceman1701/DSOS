@@ -1,15 +1,17 @@
 package io.github.spaceman1701.oxidizer.compiler.bytecode
 
+import io.github.spaceman1701.oxidizer.compiler.util.{U32, U64, U16}
+
 sealed trait Instruction {
 
   /*
   Basic Load/Store instructions. For simplicity only wide insturctions.
    */
-  case class Store(loc: Int) extends Instruction //objref | value -> [] (convert to objref and place on data stack)
+  case class Store(loc: U16) extends Instruction //objref | value -> [] (convert to objref and place on data stack)
   case class LoadConstInt(value: Long) extends Instruction
   case class LoadConstFloat(value: Double) extends Instruction
-  case class LoadConstStr(ptr: Long) extends Instruction //load a string from the constant string areas
-  case class LoadVar(loc: Int) extends Instruction
+  case class LoadConstStr(ptr: U64) extends Instruction //load a string from the constant string areas
+  case class LoadVar(loc: U16) extends Instruction
 
   /*
   Native list slice. Allows complex slices to be done in one instruction
@@ -46,14 +48,14 @@ sealed trait Instruction {
 
   /*
   Branch instrictions. Normal and wide as most branches are very small. Jumps can only occur within a single module
-  so wide instructions are safe as signed Int
+  so wide instructions are safe as unsigned Int
    */
   case class IfG(target: Byte) extends Instruction//objref, objref -> []
   case class IfL(target: Byte) extends Instruction
   case class IfEq(target: Byte) extends Instruction
-  case class IfGWide(target: Int) extends Instruction //jumps can only happen inside a file
-  case class IfLWide(target: Int) extends Instruction
-  case class IfEqWide(target: Int) extends Instruction
+  case class IfGWide(target: U32) extends Instruction //jumps can only happen inside a file
+  case class IfLWide(target: U32) extends Instruction //thus, hard limit on 4,294,967,295 per file
+  case class IfEqWide(target: U32) extends Instruction
 
   /*
   Async IO instructions.
