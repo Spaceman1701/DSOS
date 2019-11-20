@@ -13,6 +13,8 @@ sealed trait Instruction {
   case class LoadConstStr(ptr: U64) extends Instruction //load a string from the constant string areas
   case class LoadVar(loc: U16) extends Instruction
 
+  case object CreateObject extends Instruction // objref(name) -> objref
+
   /*
   Native list slice. Allows complex slices to be done in one instruction
    */
@@ -57,6 +59,9 @@ sealed trait Instruction {
   case class IfLWide(target: U32) extends Instruction //thus, hard limit on 4,294,967,295 per file
   case class IfEqWide(target: U32) extends Instruction
 
+
+  case object Throw extends Instruction //objref(exeception) -> [] //clears the execution stack
+
   /*
   Async IO instructions.
    */
@@ -72,7 +77,6 @@ sealed trait Instruction {
   IPC instructions. Write suspends current thread. Read suspends until object is placed on channel
    */
   //TODO: Maybe these should use PostEvent and WaitEvent
-  case object CreateChannel extends Instruction // [] -> objref(channel)
   case object WriteChannel extends Instruction //objref -> []
   case object ReadChannel extends Instruction //objref(channel) -> objref
 

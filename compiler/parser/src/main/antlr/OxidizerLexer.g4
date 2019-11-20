@@ -25,6 +25,10 @@ KW_CONTINUE: 'continue';
 KW_SPAWN: 'spwan';
 KW_LISTEN: 'listen';
 KW_SEND: 'send';
+KW_THROW: 'throw';
+KW_CATCH: 'catch';
+KW_TRY: 'try';
+KW_FINALLY: 'finally';
 
 
 OP_LSHIFT: '<<';
