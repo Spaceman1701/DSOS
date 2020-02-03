@@ -80,5 +80,16 @@ sealed trait Instruction {
   case object WriteChannel extends Instruction //objref -> []
   case object ReadChannel extends Instruction //objref(channel) -> objref
 
+
+  object Instruction {
+    def Byteify(ins: Instruction): Array[Byte] = {
+      ins match {
+        case Store(loc) => {
+          return Array[Byte]{0}
+        }
+      }
+    }
+  }
 }
+
 
