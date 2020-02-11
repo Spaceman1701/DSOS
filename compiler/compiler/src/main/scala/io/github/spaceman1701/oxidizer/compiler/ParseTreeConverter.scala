@@ -8,8 +8,8 @@ import scala.jdk.CollectionConverters._
 
 class ParseTreeConverter extends OxidizerParserBaseVisitor[AST] {
 
-  override def visitProgram(ctx: OxidizerParser.ProgramContext): Module = {
-    visit(ctx.module()).asInstanceOf[Module]
+  override def visitProgram(ctx: OxidizerParser.ProgramContext): ModuleDef = {
+    visit(ctx.module()).asInstanceOf[ModuleDef]
   }
 
   override def visitModuleDef(ctx: OxidizerParser.ModuleDefContext): Module = {

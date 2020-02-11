@@ -10,11 +10,13 @@ class Unsigned(private val bytes: Int, val value: BigInt) {
   def minValue = 0
 
   def toBytes = value.toByteArray
+
+  override def toString: String = value.toString(16)
 }
 
 class U8(value: Short) extends Unsigned(1, BigInt(value))
 
-class U16(value: Int) extends Unsigned(2, BigInt(value))
+class U16(value: Long) extends Unsigned(2, BigInt(value))
 
 class U32(value: Long) extends Unsigned(4, BigInt(value))
 

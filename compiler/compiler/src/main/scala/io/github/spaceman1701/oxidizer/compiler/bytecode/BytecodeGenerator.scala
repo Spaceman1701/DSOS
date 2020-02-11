@@ -7,10 +7,15 @@ import scala.collection.mutable.ListBuffer
 
 class BytecodeGenerator {
 
-  val constantStrings = ListBuffer[String]()
-  var reverseStringMap = Map[String, U32]()
+  val stringConstants = new NameBuffer()
+  val localVariables = new NameBuffer()
 
   val bytecodeBuffer = ListBuffer[Instruction]()
+
+
+  def isHeapIdent(ident: String): Boolean = {
+    return ident.contains(".")
+  }
 
   def generate(block: List[Stmt]): Unit = {
     val insBuffer = ListBuffer[Instruction]()
@@ -19,9 +24,17 @@ class BytecodeGenerator {
       stmt match {
         case ExprStmt(expr) => convertExpr(expr)
         case AssignStmt(ident, expr) =>
-          convertExpr(expr)
-        case DestructerAssignStmt(idents, expr) =>
-          convertExpr(expr)
+          val (index, added) = localVariables.add(ident)
+          convertExpr(expr) //leaves one on the stack
+
+          if (isHeapIdent(ident)) {
+            generateMemberLoad(ident) //load the ref to the member we will store to
+            StoreMember >>: this
+          } else {
+            Store(new U16(index)) >>: this //store as local var
+          }
+
+        case DestructerAssignStmt(idents, expr) => ???
         case LoopStmt(loop) =>
         case BranchStmt(branch) =>
         case ReturnStmt(expr) =>
@@ -56,7 +69,8 @@ class BytecodeGenerator {
         for (part <- parts) {
           part match {
             case TextPart(text) =>
-              addIns(LoadConstStr(addConstString(text)))
+              val (ptr, _) = stringConstants.add(text)
+              addIns(LoadConstStr(new U32(ptr)))
             case EmbeddedExpr(expr) =>
               convertExpr(expr)
           }
@@ -68,18 +82,20 @@ class BytecodeGenerator {
     }
   }
 
-  def addConstString(text: String): U32 = {
-    if (reverseStringMap.contains(text)) {
-      reverseStringMap(text)
-    } else {
-      constantStrings.addOne(text)
-      val partIndex = new U32(constantStrings.size - 1)
-      reverseStringMap = reverseStringMap + (text -> partIndex)
-      partIndex
+  def generateMemberLoad(ident: String): Unit = {
+    val pieces = ident.split(".")
+    LoadVar(new U16(localVariables.add(pieces(0))._1)) >>: this//base of name must be a local variable objref
+    for (piece <- pieces.slice(1, pieces.size)) {
+      LoadMember >>: this //each member piece is a new objref on the stack
     }
+    //result is one objref added to the stack
   }
 
   def addIns(ins: Instruction): Unit = {
+    bytecodeBuffer.addOne(ins)
+  }
+
+  def >>: (ins: Instruction): Unit = {
     bytecodeBuffer.addOne(ins)
   }
 }

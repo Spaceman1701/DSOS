@@ -2,14 +2,42 @@ package io.github.spaceman1701.oxidizer.compiler
 
 import java.io.ByteArrayInputStream
 import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Paths}
 
+import io.github.spaceman1701.oxidizer.compiler.ast.{ClassDecl, FunctionDecl}
+import io.github.spaceman1701.oxidizer.compiler.bytecode.BytecodeGenerator
 import io.github.spaceman1701.oxidizer.parser.{OxidizerLexer, OxidizerParser}
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream}
 
 object Main extends App {
-  val input = "hello world;"
-  val stream = new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8))
+
+  if (args.length < 1) {
+    println("error: no input file")
+    System.exit(-1)
+  }
+
+  println(s"compiling ${args(0)}")
+
+  val inputBytes = Files.readAllBytes(Paths.get(args(0)))
+
+  val stream = new ByteArrayInputStream(inputBytes)
   val lexer = new OxidizerLexer(CharStreams.fromStream(stream, StandardCharsets.UTF_8))
   val parser = new OxidizerParser(new CommonTokenStream(lexer))
 
+
+  val program = new ParseTreeConverter().visitProgram(parser.program())
+
+  val generator = new BytecodeGenerator()
+
+  for (decl <- program.decls) {
+    decl match {
+      case ClassDecl(name, members) => ???
+      case FunctionDecl(functionDef) =>
+        generator.generate(functionDef.body)
+    }
+  }
+
+  for (ins <- generator.bytecodeBuffer) {
+    println(ins)
+  }
 }

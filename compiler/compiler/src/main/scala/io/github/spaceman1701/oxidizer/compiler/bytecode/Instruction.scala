@@ -44,6 +44,19 @@ Load class member (function or field)
 case object LoadMember extends Instruction//objref, name -> objref
 
 /*
+Store top into pointer at top-1.
+
+i.e
+LoadVar(0) //objref
+LoadConstString(foo) //objref, name
+LoadMember //objref
+LoadConstInt(0) //objref, value
+StoreMember //[] (the objref now points to value)
+
+ */
+case object StoreMember extends Instruction //objref, objref -> []
+
+/*
 Call a function. Creates a new data stack and a new execution stack
  */
 case object Call extends Instruction//objref(callable) -> []
