@@ -1,6 +1,7 @@
 package io.github.spaceman1701.oxidizer.compiler.bytecode
 
-import io.github.spaceman1701.oxidizer.compiler.ast.{AST, ArrayIndex, AssignStmt, Binop, BranchStmt, BreakStmt, ContinueStmt, DestructerAssignStmt, EmbeddedExpr, Expr, ExprStmt, FloatLit, FunCall, IntLit, ListComp, ListenExpr, Lit, Literal, LoopStmt, Parens, ReturnStmt, SendExpr, SpawnStmt, Stmt, StringLit, Ternary, TextPart, Unop, Var}
+import io.github.spaceman1701.oxidizer.compiler.ast
+import io.github.spaceman1701.oxidizer.compiler.ast.{AST, ArrayIndex, AssignStmt, BinaryOperator, Binop, BitwiseAnd, BitwiseOr, BranchStmt, BreakStmt, CompareEq, CompareGE, CompareGT, CompareLE, CompareLT, CompareNE, ContinueStmt, DestructerAssignStmt, Divide, EmbeddedExpr, Expr, ExprStmt, FloatLit, FunCall, IntLit, LeftShift, ListComp, ListenExpr, Lit, Literal, LogicalAnd, LogicalOr, LoopStmt, Minus, Modulo, Multiply, Parens, Plus, Power, ReturnStmt, RightShift, SendExpr, SpawnStmt, Stmt, StringLit, Ternary, TextPart, Unop, UnsignedRightShift, Var, XOr}
 import io.github.spaceman1701.oxidizer.compiler.util._
 
 import scala.collection.mutable.ListBuffer
@@ -53,15 +54,50 @@ class BytecodeGenerator {
         }
       case ArrayIndex(arrayExpr, start, end, step) => ???
       case Lit(literal) => convertLiteral(literal)
-      case FunCall(ident, params) => ???
-      case Parens(expr) => ???
+      case FunCall(ident, params) =>
+        for (p <- params) {
+          convertExpr(p)
+        }
+        LoadConstInt(params.length) >>: this
+        if (isHeapIdent(ident)) {
+          generateMemberLoad(ident)
+        }
+        Call >>: this
+      case Parens(expr) => convertExpr(expr)
       case ListComp(comp) => ???
       case Unop(expr, op) => ???
-      case Binop(first, second, op) => ???
+      case Binop(first, second, op) => pickBinOp(first, second, op)
       case Ternary(cond, ifExpr, elseExpr) => ???
       case SendExpr(expr) => ???
       case ListenExpr(expr) => ???
     }
+  }
+
+  def pickBinOp(first: Expr, second: Expr, op: BinaryOperator): Unit = {
+    op match {
+      case Plus => emitSimpleBinOp(first, second, Add)
+      case Minus => emitSimpleBinOp(first, second, Sub)
+      case ast.Concat => emitSimpleBinOp(first, second, Concat)
+      case Multiply => emitSimpleBinOp(first, second, Mul)
+      case Divide => emitSimpleBinOp(first, second, Div)
+      case Power => emitSimpleBinOp(first, second, Pow)
+      case LogicalAnd => emitSimpleBinOp(first, second, LAnd)
+      case LogicalOr => emitSimpleBinOp(first, second, LOr)
+      case CompareEq => emitSimpleBinOp(first, second, CompEq)
+      case CompareGT => emitSimpleBinOp(first, second, CompG)
+      case CompareLT => emitSimpleBinOp(first, second, CompL)
+
+      case CompareLE => emitSimpleBinOp(second, first, CompG) //a <= b == not (b > a)
+      case CompareGE => emitSimpleBinOp(second, first, CompL) //a >= b == not (b < a)
+
+      case _ => ??? //the rest should be implemented as functions
+    }
+  }
+
+  def emitSimpleBinOp(first: Expr, second: Expr, ins: Instruction): Unit = {
+    convertExpr(first)
+    convertExpr(second)
+    ins >>: this
   }
 
   def convertLiteral(lit: Literal): Unit = {

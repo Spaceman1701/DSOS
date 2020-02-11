@@ -62,24 +62,32 @@ case object Pow extends Instruction{
   val opcode = 13
 }
 
+case object LAnd extends Instruction {
+  val opcode = 14
+}
+
+case object LOr extends Instruction {
+  val opcode = 15
+}
+
 /*
 Compare instructions. For when result of a compare is stored
  */
 case object CompG extends Instruction { //objref, objref -> value
-  val opcode = 14
+  val opcode = 16
 }
 case object CompL extends Instruction {
-  val opcode = 15
+  val opcode = 17
 }
 case object CompEq extends Instruction {
-  val opcode = 16
+  val opcode = 18
 }
 
 /*
 Load class member (function or field)
  */
 case object LoadMember extends Instruction { //objref, name -> objref
-  val opcode = 17
+  val opcode = 19
 }
 
 /*
@@ -94,14 +102,17 @@ StoreMember //[] (the objref now points to value)
 
  */
 case object StoreMember extends Instruction { //objref, objref -> []
-  val opcode = 18
+  val opcode = 20
 }
 
 /*
 Call a function. Creates a new data stack and a new execution stack
+The tos should be a callable, the next value should be a param count, and the next values
+should be n params
  */
-case object Call extends Instruction { //objref(callable) -> []
-  val opcode = 19
+//objref(callable), objref(int), objref... -> []
+case object Call extends Instruction {
+  val opcode = 21
 }
 
 /*
@@ -112,18 +123,18 @@ so wide instructions are safe as unsigned Int
 //jumps can only happen inside a file
 //thus, hard limit on 4,294,967,295 per file
 case class IfGWide(target: U32) extends Instruction {
-  val opcode = 20
+  val opcode = 22
 }
 case class IfLWide(target: U32) extends Instruction {
-  val opcode = 21
+  val opcode = 22
 }
 case class IfEqWide(target: U32) extends Instruction {
-  val opcode = 22
+  val opcode = 23
 }
 
 
 case object Throw extends Instruction { //objref(exeception) -> [] //clears the execution stack
-  val opcode = 23
+  val opcode = 24
 }
 
 /*
@@ -152,4 +163,8 @@ case object WriteChannel extends Instruction { //objref -> []
 }
 case object ReadChannel extends Instruction { //objref(channel) -> objref
   val opcode = 28
+}
+
+case object Not extends Instruction {
+  val opcode = 29
 }

@@ -130,7 +130,7 @@ class ParseTreeConverter extends OxidizerParserBaseVisitor[AST] {
   }
 
   override def visitCompare_op(ctx: OxidizerParser.Compare_opContext): BinaryOperator = {
-    ctx match {
+    return ctx match {
       case _ if ctx.COMP_G() != null => CompareGT
       case _ if ctx.COMP_GE() != null => CompareGE
       case _ if ctx.COMP_L() != null => CompareLT
