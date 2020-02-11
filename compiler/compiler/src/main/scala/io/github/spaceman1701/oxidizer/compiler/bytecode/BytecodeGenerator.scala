@@ -18,13 +18,11 @@ class BytecodeGenerator {
   }
 
   def generate(block: List[Stmt]): Unit = {
-    val insBuffer = ListBuffer[Instruction]()
-
     for (stmt <- block) {
       stmt match {
         case ExprStmt(expr) => convertExpr(expr)
         case AssignStmt(ident, expr) =>
-          val (index, added) = localVariables.add(ident)
+          val index = localVariables.add(ident)
           convertExpr(expr) //leaves one on the stack
 
           if (isHeapIdent(ident)) {
@@ -48,16 +46,21 @@ class BytecodeGenerator {
   def convertExpr(expr: Expr): Unit = {
     expr match {
       case Var(ident) =>
-      case ArrayIndex(arrayExpr, start, end, step) =>
+        if (isHeapIdent(ident)) {
+          generateMemberLoad(ident)
+        } else {
+          LoadVar(new U16(localVariables.add(ident))) >>: this
+        }
+      case ArrayIndex(arrayExpr, start, end, step) => ???
       case Lit(literal) => convertLiteral(literal)
-      case FunCall(ident, params) =>
-      case Parens(expr) =>
-      case ListComp(comp) =>
-      case Unop(expr, op) =>
-      case Binop(first, second, op) =>
-      case Ternary(cond, ifExpr, elseExpr) =>
-      case SendExpr(expr) =>
-      case ListenExpr(expr) =>
+      case FunCall(ident, params) => ???
+      case Parens(expr) => ???
+      case ListComp(comp) => ???
+      case Unop(expr, op) => ???
+      case Binop(first, second, op) => ???
+      case Ternary(cond, ifExpr, elseExpr) => ???
+      case SendExpr(expr) => ???
+      case ListenExpr(expr) => ???
     }
   }
 
@@ -69,7 +72,7 @@ class BytecodeGenerator {
         for (part <- parts) {
           part match {
             case TextPart(text) =>
-              val (ptr, _) = stringConstants.add(text)
+              val ptr = stringConstants.add(text)
               addIns(LoadConstStr(new U32(ptr)))
             case EmbeddedExpr(expr) =>
               convertExpr(expr)
@@ -83,8 +86,8 @@ class BytecodeGenerator {
   }
 
   def generateMemberLoad(ident: String): Unit = {
-    val pieces = ident.split(".")
-    LoadVar(new U16(localVariables.add(pieces(0))._1)) >>: this//base of name must be a local variable objref
+    val pieces = ident.split("\\.")
+    LoadVar(new U16(localVariables.add(pieces(0)))) >>: this//base of name must be a local variable objref
     for (piece <- pieces.slice(1, pieces.size)) {
       LoadMember >>: this //each member piece is a new objref on the stack
     }

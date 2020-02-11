@@ -2,46 +2,85 @@ package io.github.spaceman1701.oxidizer.compiler.bytecode
 
 import io.github.spaceman1701.oxidizer.compiler.util.{U32, U64, U16}
 
-sealed trait Instruction
+sealed trait Instruction {
+  val opcode: Byte
+}
 
 /*
 Basic Load/Store instructions. For simplicity only wide insturctions.
  */
-case class Store(loc: U16) extends Instruction //objref | value -> [] (convert to objref and place on data stack)
-case class LoadConstInt(value: Long) extends Instruction
-case class LoadConstFloat(value: Double) extends Instruction
-case class LoadConstStr(ptr: U32) extends Instruction //load a string from the constant string areas
-case class LoadVar(loc: U16) extends Instruction
+case class Store(loc: U16) extends Instruction { //objref | value -> [] (convert to objref and place on data stack)
+  val opcode = 0
+}
+case class LoadConstInt(value: Long) extends Instruction {
+  val opcode = 1
+}
+case class LoadConstFloat(value: Double) extends Instruction {
+  val opcode = 2
+}
+case class LoadConstStr(ptr: U32) extends Instruction { //load a string from the constant string areas
+  val opcode = 3
+}
+case class LoadVar(loc: U16) extends Instruction {
+  val opcode = 4
+}
 
-case object CreateObject extends Instruction // objref(name) -> objref
+case object CreateObject extends Instruction { // objref(name) -> objref
+  val opcode = 5
+}
 
 /*
 Native list slice. Allows complex slices to be done in one instruction
  */
-case object SliceList extends Instruction //objref, objref -> objref
+case object SliceList extends Instruction { //objref, objref -> objref
+  val opcode = 6
+}
 
 /*
 Math instructions. Short circuit to native impl when available
  */
-case object Add extends Instruction //objref, objref -> value
-case object Sub extends Instruction
-case object Mul extends Instruction
-case object Div extends Instruction
-case object Mod extends Instruction
-case object Concat extends Instruction
-case object Pow extends Instruction
+//objref, objref -> value
+case object Add extends Instruction {
+  val opcode = 7
+}
+case object Sub extends Instruction {
+  val opcode = 8
+}
+case object Mul extends Instruction{
+  val opcode = 9
+}
+case object Div extends Instruction{
+  val opcode = 10
+}
+case object Mod extends Instruction{
+  val opcode = 11
+}
+case object Concat extends Instruction{
+  val opcode = 12
+}
+case object Pow extends Instruction{
+  val opcode = 13
+}
 
 /*
 Compare instructions. For when result of a compare is stored
  */
-case object CompG extends Instruction //objref, objref -> value
-case object CompL extends Instruction
-case object CompEq extends Instruction
+case object CompG extends Instruction { //objref, objref -> value
+  val opcode = 14
+}
+case object CompL extends Instruction {
+  val opcode = 15
+}
+case object CompEq extends Instruction {
+  val opcode = 16
+}
 
 /*
 Load class member (function or field)
  */
-case object LoadMember extends Instruction//objref, name -> objref
+case object LoadMember extends Instruction { //objref, name -> objref
+  val opcode = 17
+}
 
 /*
 Store top into pointer at top-1.
@@ -54,41 +93,63 @@ LoadConstInt(0) //objref, value
 StoreMember //[] (the objref now points to value)
 
  */
-case object StoreMember extends Instruction //objref, objref -> []
+case object StoreMember extends Instruction { //objref, objref -> []
+  val opcode = 18
+}
 
 /*
 Call a function. Creates a new data stack and a new execution stack
  */
-case object Call extends Instruction//objref(callable) -> []
+case object Call extends Instruction { //objref(callable) -> []
+  val opcode = 19
+}
 
 /*
 Branch instrictions. Normal and wide as most branches are very small. Jumps can only occur within a single module
 so wide instructions are safe as unsigned Int
  */
-case class IfG(target: Byte) extends Instruction//objref, objref -> []
-case class IfL(target: Byte) extends Instruction
-case class IfEq(target: Byte) extends Instruction
-case class IfGWide(target: U32) extends Instruction //jumps can only happen inside a file
-case class IfLWide(target: U32) extends Instruction //thus, hard limit on 4,294,967,295 per file
-case class IfEqWide(target: U32) extends Instruction
+//objref, objref -> []
+//jumps can only happen inside a file
+//thus, hard limit on 4,294,967,295 per file
+case class IfGWide(target: U32) extends Instruction {
+  val opcode = 20
+}
+case class IfLWide(target: U32) extends Instruction {
+  val opcode = 21
+}
+case class IfEqWide(target: U32) extends Instruction {
+  val opcode = 22
+}
 
 
-case object Throw extends Instruction //objref(exeception) -> [] //clears the execution stack
+case object Throw extends Instruction { //objref(exeception) -> [] //clears the execution stack
+  val opcode = 23
+}
 
 /*
 Async IO instructions.
  */
-case object PostEvent extends Instruction //objref(event) -> objref-promise
-case object WaitEvent extends Instruction //objref-promise | objref -> objref
+case object PostEvent extends Instruction { //objref(event) -> objref-promise
+  val opcode = 24
+}
+case object WaitEvent extends Instruction { //objref-promise | objref -> objref
+  val opcode = 25
+}
 
 /*
 Spawn new coroutine with a function
  */
-case object SpawnCoroutine extends Instruction //objref(callable)
+case object SpawnCoroutine extends Instruction { //objref(callable)
+  val opcode = 26
+}
 
 /*
 IPC instructions. Write suspends current thread. Read suspends until object is placed on channel
  */
 //TODO: Maybe these should use PostEvent and WaitEvent
-case object WriteChannel extends Instruction //objref -> []
-case object ReadChannel extends Instruction //objref(channel) -> objref
+case object WriteChannel extends Instruction { //objref -> []
+  val opcode = 27
+}
+case object ReadChannel extends Instruction { //objref(channel) -> objref
+  val opcode = 28
+}

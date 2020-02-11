@@ -8,7 +8,7 @@ class NameBuffer() {
   private var ptrMap: Map[String, Long] = Map[String, Long]()
   private var strList = ListBuffer[String]()
 
-  def add(text: String): (Long, Boolean) = {
+  def addAndCheck(text: String): (Long, Boolean) = {
     if (ptrMap.contains(text)) {
       (ptrMap(text), false)
     } else {
@@ -18,6 +18,8 @@ class NameBuffer() {
       (partIndex, true)
     }
   }
+
+  def add(text: String): Long = addAndCheck(text)._1
 
   def get(ptr: Long): String = {
     if (ptr != ptr.toInt) {
