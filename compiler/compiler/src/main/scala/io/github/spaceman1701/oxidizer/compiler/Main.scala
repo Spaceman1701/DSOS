@@ -32,10 +32,13 @@ object Main extends App {
 
   val generator = new BytecodeGenerator()
 
+
+  var functionMap = Map[Int, String]()
   for (decl <- program.decls) {
     decl match {
       case ClassDecl(name, members) => ???
       case FunctionDecl(functionDef) =>
+        functionMap = functionMap + (generator.bytecodeBuffer.size -> functionDef.name)
         generator.generate(functionDef.body)
     }
   }
@@ -47,5 +50,5 @@ object Main extends App {
       System.out
     }
 
-  BytecodeWriter.write(generator.bytecodeBuffer.toList, output)
+  BytecodeWriter.write(generator.bytecodeBuffer.toList, functionMap, output)
 }

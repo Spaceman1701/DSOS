@@ -1,7 +1,7 @@
 package io.github.spaceman1701.oxidizer.compiler.bytecode
 
 import io.github.spaceman1701.oxidizer.compiler.ast
-import io.github.spaceman1701.oxidizer.compiler.ast.{AST, ArrayIndex, AssignStmt, BinaryOperator, Binop, BitwiseAnd, BitwiseOr, BranchStmt, BreakStmt, CompareEq, CompareGE, CompareGT, CompareLE, CompareLT, CompareNE, ContinueStmt, DestructerAssignStmt, Divide, Elif, EmbeddedExpr, Expr, ExprStmt, FloatLit, FunCall, IfBranch, IntLit, LeftShift, ListComp, ListenExpr, Lit, Literal, LogicalAnd, LogicalOr, LoopStmt, Minus, Modulo, Multiply, Parens, Plus, Power, ReturnStmt, RightShift, SendExpr, SpawnStmt, Stmt, StringLit, SwitchBranch, Ternary, TextPart, Unop, UnsignedRightShift, Var, XOr}
+import io.github.spaceman1701.oxidizer.compiler.ast.{AST, ArrayIndex, AssignStmt, BinaryOperator, Binop, BitwiseAnd, BitwiseOr, BranchStmt, BreakStmt, CompareEq, CompareGE, CompareGT, CompareLE, CompareLT, CompareNE, ContinueStmt, DestructerAssignStmt, Divide, Elif, EmbeddedExpr, Expr, ExprStmt, FloatLit, ForLoop, FunCall, IfBranch, IntLit, LeftShift, ListComp, ListenExpr, Lit, Literal, LogicalAnd, LogicalOr, LoopStmt, Minus, Modulo, Multiply, Parens, Plus, Power, ReturnStmt, RightShift, SendExpr, SpawnStmt, Stmt, StringLit, SwitchBranch, Ternary, TextPart, Unop, UnsignedRightShift, Var, WhileLoop, XOr}
 import io.github.spaceman1701.oxidizer.compiler.util._
 
 import scala.collection.mutable.ListBuffer
@@ -35,6 +35,10 @@ class BytecodeGenerator {
 
         case DestructerAssignStmt(idents, expr) => ???
         case LoopStmt(loop) =>
+          loop match {
+            case ForLoop(ident, inExpr, body) => ???
+            case WhileLoop(cond, body) => ???
+          }
         case BranchStmt(branch) =>
           branch match {
             case IfBranch(cond, ifBody, elifs, elseBody) => emitIfElse(cond, ifBody, elifs, elseBody)
