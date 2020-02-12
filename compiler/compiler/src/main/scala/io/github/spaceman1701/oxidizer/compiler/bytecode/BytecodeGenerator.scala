@@ -1,7 +1,7 @@
 package io.github.spaceman1701.oxidizer.compiler.bytecode
 
 import io.github.spaceman1701.oxidizer.compiler.ast
-import io.github.spaceman1701.oxidizer.compiler.ast.{AST, ArrayIndex, AssignStmt, BinaryOperator, Binop, BitwiseAnd, BitwiseOr, BranchStmt, BreakStmt, CompareEq, CompareGE, CompareGT, CompareLE, CompareLT, CompareNE, ContinueStmt, DestructerAssignStmt, Divide, EmbeddedExpr, Expr, ExprStmt, FloatLit, FunCall, IntLit, LeftShift, ListComp, ListenExpr, Lit, Literal, LogicalAnd, LogicalOr, LoopStmt, Minus, Modulo, Multiply, Parens, Plus, Power, ReturnStmt, RightShift, SendExpr, SpawnStmt, Stmt, StringLit, Ternary, TextPart, Unop, UnsignedRightShift, Var, XOr}
+import io.github.spaceman1701.oxidizer.compiler.ast.{AST, ArrayIndex, AssignStmt, BinaryOperator, Binop, BitwiseAnd, BitwiseOr, BranchStmt, BreakStmt, CompareEq, CompareGE, CompareGT, CompareLE, CompareLT, CompareNE, ContinueStmt, DestructerAssignStmt, Divide, Elif, EmbeddedExpr, Expr, ExprStmt, FloatLit, FunCall, IfBranch, IntLit, LeftShift, ListComp, ListenExpr, Lit, Literal, LogicalAnd, LogicalOr, LoopStmt, Minus, Modulo, Multiply, Parens, Plus, Power, ReturnStmt, RightShift, SendExpr, SpawnStmt, Stmt, StringLit, SwitchBranch, Ternary, TextPart, Unop, UnsignedRightShift, Var, XOr}
 import io.github.spaceman1701.oxidizer.compiler.util._
 
 import scala.collection.mutable.ListBuffer
@@ -36,12 +36,37 @@ class BytecodeGenerator {
         case DestructerAssignStmt(idents, expr) => ???
         case LoopStmt(loop) =>
         case BranchStmt(branch) =>
-        case ReturnStmt(expr) =>
-        case BreakStmt =>
-        case ContinueStmt =>
-        case SpawnStmt(expr) =>
+          branch match {
+            case IfBranch(cond, ifBody, elifs, elseBody) => emitIfElse(cond, ifBody, elifs, elseBody)
+            case SwitchBranch(cond, cases) => ???
+          }
+        case ReturnStmt(expr) => ???
+        case BreakStmt => ???
+        case ContinueStmt => ???
+        case SpawnStmt(expr) => ???
       }
     }
+  }
+
+  def emitIfElse(cond: Expr, ifBody: List[Stmt], elifs: List[Elif], elseBody: Option[List[Stmt]]) = {
+    val skipIndicies = ListBuffer[Int]()
+    convertExpr(cond) //leaves bool on the stack
+    val jumpIns = NoOp >>: this
+    generate(ifBody)
+    skipIndicies.addOne(NoOp >>: this) //jump past rest of branch
+    val afterIfIns = bytecodeBuffer.size //index of the next instruction generated
+    bytecodeBuffer(jumpIns) = IfFalse(new U32(afterIfIns))
+    for (elif <- elifs) {
+      convertExpr(elif.cond)
+      val jumpIns = NoOp >>: this
+      generate(elif.body)
+      val afterIfIns = bytecodeBuffer.size //index of the next instruction generated
+      bytecodeBuffer(jumpIns) = IfFalse(new U32(afterIfIns))
+      skipIndicies.addOne(NoOp >>: this)
+    }
+    elseBody.foreach(generate)
+    val endOfBranch = bytecodeBuffer.size
+    skipIndicies.foreach(bytecodeBuffer(_) = Jump(new U32(endOfBranch)))
   }
 
   def convertExpr(expr: Expr): Unit = {
@@ -102,21 +127,21 @@ class BytecodeGenerator {
 
   def convertLiteral(lit: Literal): Unit = {
     lit match {
-      case IntLit(value) => addIns(LoadConstInt(value))
-      case FloatLit(value) => addIns(LoadConstFloat(value))
+      case IntLit(value) => LoadConstInt(value) >>: this
+      case FloatLit(value) => LoadConstFloat(value) >>: this
       case StringLit(parts) =>
         for (part <- parts) {
           part match {
             case TextPart(text) =>
               val ptr = stringConstants.add(text)
-              addIns(LoadConstStr(new U32(ptr)))
+              LoadConstStr(new U32(ptr)) >>: this
             case EmbeddedExpr(expr) =>
               convertExpr(expr)
           }
         }
 
         for (_ <- 0 until parts.size - 1) { //generate concats
-          addIns(Concat)
+          Concat >>: this
         }
     }
   }
@@ -130,11 +155,8 @@ class BytecodeGenerator {
     //result is one objref added to the stack
   }
 
-  def addIns(ins: Instruction): Unit = {
+  def >>: (ins: Instruction): Int = {
     bytecodeBuffer.addOne(ins)
-  }
-
-  def >>: (ins: Instruction): Unit = {
-    bytecodeBuffer.addOne(ins)
+    bytecodeBuffer.size - 1
   }
 }

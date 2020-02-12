@@ -4,6 +4,7 @@ import io.github.spaceman1701.oxidizer.compiler.util.{U32, U64, U16}
 
 sealed trait Instruction {
   val opcode: Byte
+  val size = 1
 }
 
 /*
@@ -115,6 +116,11 @@ case object Call extends Instruction {
   val opcode = 21
 }
 
+//unconditional jump
+case class Jump(target: U32) extends Instruction {
+  val opcode = 22
+}
+
 /*
 Branch instrictions. Normal and wide as most branches are very small. Jumps can only occur within a single module
 so wide instructions are safe as unsigned Int
@@ -122,36 +128,32 @@ so wide instructions are safe as unsigned Int
 //objref, objref -> []
 //jumps can only happen inside a file
 //thus, hard limit on 4,294,967,295 per file
-case class IfGWide(target: U32) extends Instruction {
-  val opcode = 22
-}
-case class IfLWide(target: U32) extends Instruction {
-  val opcode = 22
-}
-case class IfEqWide(target: U32) extends Instruction {
+case class IfFalse(target: U32) extends Instruction {
   val opcode = 23
 }
 
 
+
+
 case object Throw extends Instruction { //objref(exeception) -> [] //clears the execution stack
-  val opcode = 24
+  val opcode = 25
 }
 
 /*
 Async IO instructions.
  */
 case object PostEvent extends Instruction { //objref(event) -> objref-promise
-  val opcode = 24
+  val opcode = 26
 }
 case object WaitEvent extends Instruction { //objref-promise | objref -> objref
-  val opcode = 25
+  val opcode = 27
 }
 
 /*
 Spawn new coroutine with a function
  */
 case object SpawnCoroutine extends Instruction { //objref(callable)
-  val opcode = 26
+  val opcode = 28
 }
 
 /*
@@ -159,12 +161,19 @@ IPC instructions. Write suspends current thread. Read suspends until object is p
  */
 //TODO: Maybe these should use PostEvent and WaitEvent
 case object WriteChannel extends Instruction { //objref -> []
-  val opcode = 27
+  val opcode = 29
 }
 case object ReadChannel extends Instruction { //objref(channel) -> objref
-  val opcode = 28
+  val opcode = 30
 }
 
 case object Not extends Instruction {
-  val opcode = 29
+  val opcode = 31
+}
+
+/*
+Used for the bytecode generator. Cannot be produced in real code.
+ */
+case object NoOp extends Instruction {
+  val opcode: Byte = -1
 }
