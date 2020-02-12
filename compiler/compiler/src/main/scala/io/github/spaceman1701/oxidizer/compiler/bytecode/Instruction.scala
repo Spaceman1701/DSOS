@@ -116,6 +116,7 @@ case object Call extends Instruction {
   val opcode = 21
 }
 
+
 //unconditional jump
 case class Jump(target: U32) extends Instruction {
   val opcode = 22
@@ -133,6 +134,9 @@ case class IfFalse(target: U32) extends Instruction {
 }
 
 
+case object Ret extends Instruction {
+  val opcode = 24
+}
 
 
 case object Throw extends Instruction { //objref(exeception) -> [] //clears the execution stack

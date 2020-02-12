@@ -11,7 +11,7 @@ class BytecodeGenerator {
   val stringConstants = new NameBuffer()
   val localVariables = new NameBuffer()
 
-  val bytecodeBuffer = ListBuffer[Instruction]()
+  val bytecodeBuffer: ListBuffer[Instruction] = ListBuffer[Instruction]()
 
 
   def isHeapIdent(ident: String): Boolean = {
@@ -40,7 +40,9 @@ class BytecodeGenerator {
             case IfBranch(cond, ifBody, elifs, elseBody) => emitIfElse(cond, ifBody, elifs, elseBody)
             case SwitchBranch(cond, cases) => ???
           }
-        case ReturnStmt(expr) => ???
+        case ReturnStmt(expr) =>
+          convertExpr(expr)
+          Ret >>: this
         case BreakStmt => ???
         case ContinueStmt => ???
         case SpawnStmt(expr) => ???

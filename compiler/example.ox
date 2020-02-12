@@ -1,10 +1,13 @@
-def foo(a, b, c) {
-    if a > b {
-        c = 0;
-    } elif b > a {
-        c = 2;
-    } else {
-        c = 3;
+
+
+def foobar(a, b) {
+    return a + b;
+}
+
+def main() {
+    x = 5;
+    y = 3;
+    if x + y == 8 {
+        foobar(x, 8);
     }
-    q = c + a;
 }
