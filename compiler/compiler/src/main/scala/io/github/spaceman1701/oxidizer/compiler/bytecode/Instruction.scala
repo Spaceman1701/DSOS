@@ -4,7 +4,7 @@ import io.github.spaceman1701.oxidizer.compiler.util.{U32, U64, U16}
 
 sealed trait Instruction {
   val opcode: Byte
-  val size = 1
+  val size: Byte = 1
 }
 
 /*
@@ -175,9 +175,49 @@ case object Not extends Instruction {
   val opcode = 31
 }
 
+case object  XOr extends Instruction {
+  val opcode = 32
+}
+
+case object BAnd extends Instruction {
+  val opcode = 33
+}
+
+case object  BOr extends Instruction {
+  val opcode = 34
+}
+
+case object LeftShift extends Instruction {
+  val opcode = 35
+}
+
+case object RightShift extends Instruction {
+  val opcode = 36
+}
+
+case object URightShift extends Instruction {
+  val opcode = 37
+}
+
+case object Modulo extends Instruction {
+  val opcode = 38
+}
+
+case object BCompliment extends Instruction {
+  val opcode = 39
+}
 /*
+Following instructions:
 Used for the bytecode generator. Cannot be produced in real code.
  */
 case object NoOp extends Instruction {
   val opcode: Byte = -1
+}
+
+case class Break(loopContext: LoopContext) extends Instruction {
+  val opcode: Byte = -2
+}
+
+case class Continue(loopContext: LoopContext) extends Instruction {
+  val opcode: Byte = -3
 }
