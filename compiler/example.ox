@@ -1,7 +1,18 @@
 
 
 def foobar(a, b) {
-    return a + b;
+    c = a;
+    while c < b {
+        c++;
+        if c == 7 {
+            break;
+        }
+        if c == -1 {
+            c = 1;
+            continue;
+        }
+    }
+    return c;
 }
 
 def main() {

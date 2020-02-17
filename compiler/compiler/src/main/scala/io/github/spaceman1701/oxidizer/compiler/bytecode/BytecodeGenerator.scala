@@ -1,9 +1,10 @@
 package io.github.spaceman1701.oxidizer.compiler.bytecode
 
 import io.github.spaceman1701.oxidizer.compiler.ast
-import io.github.spaceman1701.oxidizer.compiler.ast.{AST, ArrayIndex, AssignStmt, BinaryOperator, Binop, BitwiseAnd, BitwiseOr, BranchStmt, BreakStmt, CompareEq, CompareGE, CompareGT, CompareLE, CompareLT, CompareNE, Compliment, ContinueStmt, Decrement, DestructerAssignStmt, Divide, Elif, EmbeddedExpr, Expr, ExprStmt, FloatLit, ForLoop, FunCall, IfBranch, Increment, IntLit, LeftShift, ListComp, ListenExpr, Lit, Literal, LogicalAnd, LogicalOr, LoopStmt, Minus, Modulo, Multiply, Negate, Parens, Plus, Power, ReturnStmt, RightShift, SendExpr, SpawnStmt, Stmt, StringLit, SwitchBranch, Ternary, TextPart, UnaryOperator, Unop, UnsignedRightShift, Var, WhileLoop, XOr}
+import io.github.spaceman1701.oxidizer.compiler.ast.{AST, ArrayIndex, AssignStmt, BinaryOperator, Binop, BitwiseAnd, BitwiseOr, BranchStmt, BreakStmt, CompareEq, CompareGE, CompareGT, CompareLE, CompareLT, CompareNE, Compliment, ContinueStmt, Decrement, DestructerAssignStmt, Divide, Elif, EmbeddedExpr, Expr, ExprStmt, FloatLit, ForLoop, FunCall, IfBranch, Increment, IntLit, ListComp, ListenExpr, Lit, Literal, LogicalAnd, LogicalOr, LoopStmt, Minus, Multiply, Negate, Parens, Plus, Power, ReturnStmt, SendExpr, SpawnStmt, Stmt, StringLit, SwitchBranch, Ternary, TextPart, UnaryOperator, Unop, UnsignedRightShift, Var, WhileLoop}
 import io.github.spaceman1701.oxidizer.compiler.util._
 
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 class BytecodeGenerator {
@@ -13,7 +14,8 @@ class BytecodeGenerator {
 
   val bytecodeBuffer: ListBuffer[Instruction] = ListBuffer[Instruction]()
 
-  var currentLoopCtx: LoopContext = null
+  var loopCtxStack: mutable.Stack[LoopContext] = mutable.Stack[LoopContext]()
+  private val loopWatcherStack = mutable.Stack[LoopWatchers]()
 
   def isHeapIdent(ident: String): Boolean = {
     return ident.contains(".")
@@ -36,10 +38,28 @@ class BytecodeGenerator {
 
         case DestructerAssignStmt(idents, expr) => ???
         case LoopStmt(loop) =>
+          loopWatcherStack.push(new LoopWatchers())
           loop match {
             case ForLoop(ident, inExpr, body) => ???
-            case WhileLoop(cond, body) => ???
+            case WhileLoop(cond, body) =>
+              val loopStart = bytecodeBuffer.size
+              emitExpr(cond)
+              val jumpIns = NoOp >>: this
+              generate(body)
+              Jump(new U32(loopStart)) >>: this
+              val loopEnd = bytecodeBuffer.size
+              bytecodeBuffer(jumpIns) = IfFalse(new U32(loopEnd))
+
+              loopWatcherStack.top.breaks.foreach(ins => {
+                bytecodeBuffer(ins) = Jump(new U32(loopEnd))
+              })
+
+              loopWatcherStack.top.continues.foreach(ins => {
+                bytecodeBuffer(ins) = Jump(new U32(loopStart))
+              })
+
           }
+          loopWatcherStack.pop()
         case BranchStmt(branch) =>
           branch match {
             case IfBranch(cond, ifBody, elifs, elseBody) => emitIfElse(cond, ifBody, elifs, elseBody)
@@ -49,7 +69,9 @@ class BytecodeGenerator {
           emitExpr(expr)
           Ret >>: this
         case BreakStmt =>
-        case ContinueStmt => ???
+          loopWatcherStack.top.breaks.addOne(NoOp >>: this)
+        case ContinueStmt =>
+          loopWatcherStack.top.continues.addOne(NoOp >>: this)
         case SpawnStmt(expr) => ???
       }
     }

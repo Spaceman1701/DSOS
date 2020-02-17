@@ -11,7 +11,7 @@ class Unsigned(private val bits: Int, val value: BigInt) {
 
   def toBytes = value.toByteArray
 
-  override def toString: String = f"0x${value.toString(16)}"
+  override def toString: String = f"${value.toString(10)}"
 }
 
 class U8(value: Short) extends Unsigned(8, BigInt(value))
