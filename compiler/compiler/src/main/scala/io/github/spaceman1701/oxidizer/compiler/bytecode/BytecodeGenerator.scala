@@ -40,7 +40,18 @@ class BytecodeGenerator {
         case LoopStmt(loop) =>
           loopWatcherStack.push(new LoopWatchers())
           loop match {
-            case ForLoop(ident, inExpr, body) => ???
+            case ForLoop(ident, inExpr, body) =>
+              emitFunctionCall("__iterator", List(inExpr)) //generate iterator onto stack
+              Dup >>: this
+              val identVar = new U16(localVariables.add(ident))
+              Store(identVar)
+              val loopStart = bytecodeBuffer.size
+              generate(body)
+              emitNextIterator()
+              Dup >>: this
+              emitIteratorOver()
+
+              Store(identVar) >>: this
             case WhileLoop(cond, body) =>
               val loopStart = bytecodeBuffer.size
               emitExpr(cond)
@@ -75,6 +86,20 @@ class BytecodeGenerator {
         case SpawnStmt(expr) => ???
       }
     }
+  }
+
+  def emitNextIterator() = {
+    LoadConstInt(1) >>: this
+    val ptr = stringConstants.add("__iterator_next") //nextify the iterator
+    LoadConstStr(new U32(ptr)) >>: this
+    Call >>: this
+  }
+
+  def emitIteratorOver() = {
+    LoadConstInt(1) >>: this
+    val ptr = stringConstants.add("__is_iterator_over") //nextify the iterator
+    LoadConstStr(new U32(ptr)) >>: this
+    Call >>: this
   }
 
   def emitIfElse(cond: Expr, ifBody: List[Stmt], elifs: List[Elif], elseBody: Option[List[Stmt]]) = {
@@ -180,6 +205,9 @@ class BytecodeGenerator {
     LoadConstInt(params.length) >>: this
     if (isHeapIdent(ident)) {
       generateMemberLoad(ident)
+    } else {
+      val ptr = stringConstants.add(ident)
+      LoadConstStr(new U32(ptr)) >>: this
     }
     Call >>: this
   }

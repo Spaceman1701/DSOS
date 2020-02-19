@@ -206,6 +206,10 @@ case object Modulo extends Instruction {
 case object BCompliment extends Instruction {
   val opcode = 39
 }
+
+case object Dup extends Instruction { //objref -> objref, objref
+  val opcode = 40
+}
 /*
 Following instructions:
 Used for the bytecode generator. Cannot be produced in real code.
