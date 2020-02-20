@@ -43,15 +43,27 @@ class BytecodeGenerator {
             case ForLoop(ident, inExpr, body) =>
               emitFunctionCall("__iterator", List(inExpr)) //generate iterator onto stack
               Dup >>: this
-              val identVar = new U16(localVariables.add(ident))
-              Store(identVar)
               val loopStart = bytecodeBuffer.size
+              emitIteratorValue()
+              val identVar = new U16(localVariables.add(ident))
+              Store(identVar) >>: this
               generate(body)
               emitNextIterator()
               Dup >>: this
-              emitIteratorOver()
+              //emitIteratorOver()
+              val iteratorOverJump = NoOp >>: this
+              Jump(new U32(loopStart))
+              val endOfLoop = bytecodeBuffer.size
+              bytecodeBuffer(iteratorOverJump) = IfFalse(new U32(endOfLoop))
+              Consume >>: this
 
-              Store(identVar) >>: this
+              loopWatcherStack.top.breaks.foreach(ins => {
+                bytecodeBuffer(ins) = Jump(new U32(endOfLoop))
+              })
+
+              loopWatcherStack.top.continues.foreach(ins => {
+                bytecodeBuffer(ins) = Jump(new U32(loopStart))
+              })
             case WhileLoop(cond, body) =>
               val loopStart = bytecodeBuffer.size
               emitExpr(cond)
@@ -99,6 +111,13 @@ class BytecodeGenerator {
     LoadConstInt(1) >>: this
     val ptr = stringConstants.add("__is_iterator_over") //nextify the iterator
     LoadConstStr(new U32(ptr)) >>: this
+    Call >>: this
+  }
+
+  def emitIteratorValue() = {
+    LoadConstInt(1) >>: this
+    val ptr = stringConstants.add("__iterator_value")
+    LoadConstStr(new U32(ptr))
     Call >>: this
   }
 

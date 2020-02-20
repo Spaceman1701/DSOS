@@ -50,5 +50,5 @@ object Main extends App {
       System.out
     }
 
-  BytecodeWriter.write(generator.bytecodeBuffer.toList, functionMap, output)
+  BytecodeWriter.write(generator, functionMap, output)
 }

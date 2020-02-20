@@ -210,6 +210,10 @@ case object BCompliment extends Instruction {
 case object Dup extends Instruction { //objref -> objref, objref
   val opcode = 40
 }
+
+case object Consume extends Instruction { //consumes the tos
+  val opcode = 41
+}
 /*
 Following instructions:
 Used for the bytecode generator. Cannot be produced in real code.

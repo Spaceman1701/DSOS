@@ -5,7 +5,9 @@ import java.nio.charset.StandardCharsets
 
 object BytecodeWriter {
 
-  def write(instructions: List[Instruction], functions: Map[Int, String], output: OutputStream) = {
+  def write(bytecodeGen: BytecodeGenerator, functions: Map[Int, String], output: OutputStream) = {
+    val instructions = bytecodeGen.bytecodeBuffer
+
     val header = "index -- op -- name\n"
     output.write(header.getBytes(StandardCharsets.UTF_8))
 
