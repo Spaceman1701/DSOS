@@ -1,7 +1,7 @@
 package io.github.spaceman1701.oxidizer.compiler.bytecode
 
 import io.github.spaceman1701.oxidizer.compiler.ast
-import io.github.spaceman1701.oxidizer.compiler.ast.{AST, ArrayIndex, AssignStmt, BinaryOperator, Binop, BitwiseAnd, BitwiseOr, BranchStmt, BreakStmt, CompareEq, CompareGE, CompareGT, CompareLE, CompareLT, CompareNE, Compliment, ContinueStmt, Decrement, DestructerAssignStmt, Divide, Elif, EmbeddedExpr, Expr, ExprStmt, FloatLit, ForLoop, FunCall, IfBranch, Increment, IntLit, ListComp, ListenExpr, Lit, Literal, LogicalAnd, LogicalOr, LoopStmt, Minus, Multiply, Negate, Parens, Plus, Power, ReturnStmt, SendExpr, SpawnStmt, Stmt, StringLit, SwitchBranch, Ternary, TextPart, UnaryOperator, Unop, UnsignedRightShift, Var, WhileLoop}
+import io.github.spaceman1701.oxidizer.compiler.ast.{AST, ArrayIndex, AssignStmt, BinaryOperator, Binop, BitwiseAnd, BitwiseOr, BranchStmt, BreakStmt, CompareEq, CompareGE, CompareGT, CompareLE, CompareLT, CompareNE, Compliment, ContinueStmt, Decrement, DestructerAssignStmt, Divide, Elif, EmbeddedExpr, Expr, ExprStmt, FloatLit, ForLoop, FunCall, FunctionDef, IfBranch, Increment, IntLit, ListComp, ListenExpr, Lit, Literal, LogicalAnd, LogicalOr, LoopStmt, Minus, Multiply, Negate, Parens, Plus, Power, ReturnStmt, SendExpr, SpawnStmt, Stmt, StringLit, SwitchBranch, Ternary, TextPart, UnaryOperator, Unop, UnsignedRightShift, Var, WhileLoop}
 import io.github.spaceman1701.oxidizer.compiler.util._
 
 import scala.collection.mutable
@@ -10,7 +10,7 @@ import scala.collection.mutable.ListBuffer
 class BytecodeGenerator {
 
   val stringConstants = new NameBuffer()
-  val localVariables = new NameBuffer()
+  val localVariables: mutable.Stack[NameBuffer] = mutable.Stack[NameBuffer]()
 
   val bytecodeBuffer: ListBuffer[Instruction] = ListBuffer[Instruction]()
 
@@ -21,12 +21,32 @@ class BytecodeGenerator {
     return ident.contains(".")
   }
 
+  def generateFunctionBody(function: FunctionDef): Int = {
+    val block = function.body
+    val functionStart = bytecodeBuffer.size
+
+    newLocalCtx()
+    function.params.foreach{p =>
+      localVar(p)
+    }
+    generateCurrentCtx(block)
+    popLocalCtx()
+
+    functionStart
+  }
+
   def generate(block: List[Stmt]): Unit = {
+    newLocalCtx()
+    generateCurrentCtx(block)
+    popLocalCtx()
+  }
+
+  def generateCurrentCtx(block: List[Stmt]): Unit = {
     for (stmt <- block) {
       stmt match {
         case ExprStmt(expr) => emitExpr(expr)
         case AssignStmt(ident, expr) =>
-          val index = localVariables.add(ident)
+          val index = localVar(ident)
           emitExpr(expr) //leaves one on the stack
 
           if (isHeapIdent(ident)) {
@@ -45,7 +65,7 @@ class BytecodeGenerator {
               Dup >>: this
               val loopStart = bytecodeBuffer.size
               emitIteratorValue()
-              val identVar = new U16(localVariables.add(ident))
+              val identVar = new U16(localVar(ident))
               Store(identVar) >>: this
               generate(body)
               emitNextIterator()
@@ -100,6 +120,20 @@ class BytecodeGenerator {
     }
   }
 
+  def newLocalCtx(): Unit = {
+    if (localVariables.isEmpty) {
+      localVariables.addOne(new NameBuffer())
+    } else {
+      localVariables.addOne(localVariables.top.clone())
+    }
+  }
+
+  def localVar(name: String): Long = localVariables.top.add(name)
+
+  def popLocalCtx(): NameBuffer = {
+    localVariables.pop()
+  }
+
   def emitNextIterator() = {
     LoadConstInt(1) >>: this
     val ptr = stringConstants.add("__iterator_next") //nextify the iterator
@@ -148,7 +182,7 @@ class BytecodeGenerator {
         if (isHeapIdent(ident)) {
           generateMemberLoad(ident)
         } else {
-          LoadVar(new U16(localVariables.add(ident))) >>: this
+          LoadVar(new U16(localVar(ident))) >>: this
         }
       case ArrayIndex(arrayExpr, start, end, step) => ???
       case Lit(literal) => convertLiteral(literal)
@@ -260,7 +294,7 @@ class BytecodeGenerator {
 
   def generateMemberLoad(ident: String): Unit = {
     val pieces = ident.split("\\.")
-    LoadVar(new U16(localVariables.add(pieces(0)))) >>: this//base of name must be a local variable objref
+    LoadVar(new U16(localVar(pieces(0)))) >>: this//base of name must be a local variable objref
     for (piece <- pieces.slice(1, pieces.size)) {
       LoadMember >>: this //each member piece is a new objref on the stack
     }

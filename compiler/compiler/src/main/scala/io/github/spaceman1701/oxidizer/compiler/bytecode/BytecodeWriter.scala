@@ -5,15 +5,15 @@ import java.nio.charset.StandardCharsets
 
 object BytecodeWriter {
 
-  def write(bytecodeGen: BytecodeGenerator, functions: Map[Int, String], output: OutputStream) = {
-    val instructions = bytecodeGen.bytecodeBuffer
+  def write(module: OxModule, output: OutputStream) = {
+    val instructions = module.bytecode
 
     val header = "index -- op -- name\n"
     output.write(header.getBytes(StandardCharsets.UTF_8))
 
     for ((ins, index) <- instructions.zipWithIndex) {
-      if (functions.get(index).isDefined) {
-        val functionLine = f"function ${functions(index)}:\n"
+      if (module.functionByIndex.get(index).isDefined) {
+        val functionLine = f"function ${module.functionByIndex(index)}:\n"
         output.write(functionLine.getBytes(StandardCharsets.UTF_8))
       }
       val line = f"${index}%-5s -- ${ins.opcode}%-2s -- ${ins}\n"

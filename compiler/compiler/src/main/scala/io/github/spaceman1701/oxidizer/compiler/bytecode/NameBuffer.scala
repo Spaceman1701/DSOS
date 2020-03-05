@@ -8,6 +8,13 @@ class NameBuffer() {
   private var ptrMap: Map[String, Long] = Map[String, Long]()
   private var strList = ListBuffer[String]()
 
+  override def clone(): NameBuffer = {
+    val clonedBuffer = new NameBuffer()
+    clonedBuffer.ptrMap = ptrMap.map{case (key, value) => (key, value)}
+    clonedBuffer.strList = strList.clone()
+    clonedBuffer
+  }
+
   def addAndCheck(text: String): (Long, Boolean) = {
     if (ptrMap.contains(text)) {
       (ptrMap(text), false)

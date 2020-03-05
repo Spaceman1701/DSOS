@@ -1,7 +1,5 @@
 package io.github.spaceman1701.oxidizer.compiler.bytecode
 
-class ClassDescriptor(val name: String) {
-  private val fields: List[String] = List()
-  private val methods: List[FunctionDescriptor] = List()
+import io.github.spaceman1701.oxidizer.compiler.util.LiteralValue
 
-}
+class ClassDescriptor(val name: String, val members: Map[String, Option[LiteralValue]])

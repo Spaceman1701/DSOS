@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 
 import io.github.spaceman1701.oxidizer.compiler.ast.{ClassDecl, FunctionDecl}
-import io.github.spaceman1701.oxidizer.compiler.bytecode.{BytecodeGenerator, BytecodeWriter}
+import io.github.spaceman1701.oxidizer.compiler.bytecode.{BytecodeGenerator, BytecodeWriter, OxModule}
 import io.github.spaceman1701.oxidizer.parser.{OxidizerLexer, OxidizerParser}
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream}
 
@@ -30,18 +30,7 @@ object Main extends App {
 
   val program = new ParseTreeConverter().visitProgram(parser.program())
 
-  val generator = new BytecodeGenerator()
-
-
-  var functionMap = Map[Int, String]()
-  for (decl <- program.decls) {
-    decl match {
-      case ClassDecl(name, members) => ???
-      case FunctionDecl(functionDef) =>
-        functionMap = functionMap + (generator.bytecodeBuffer.size -> functionDef.name)
-        generator.generate(functionDef.body)
-    }
-  }
+  val preCompiledModule = OxModule.fromModuleDef(program)
 
   val output: OutputStream =
     if (args.length == 3) {
@@ -50,5 +39,5 @@ object Main extends App {
       System.out
     }
 
-  BytecodeWriter.write(generator, functionMap, output)
+  BytecodeWriter.write(preCompiledModule, output)
 }
