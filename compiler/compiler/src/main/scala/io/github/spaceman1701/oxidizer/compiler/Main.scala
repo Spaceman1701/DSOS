@@ -40,4 +40,6 @@ object Main extends App {
     }
 
   BytecodeWriter.write(preCompiledModule, output)
+
+  preCompiledModule.compile()
 }

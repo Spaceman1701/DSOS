@@ -1,6 +1,8 @@
 package io.github.spaceman1701.oxidizer.compiler.bytecode
 
-import io.github.spaceman1701.oxidizer.compiler.util.{U32, U64, U16}
+import java.nio.ByteBuffer
+
+import io.github.spaceman1701.oxidizer.compiler.util.{U16, U32, U64, Unsigned}
 
 sealed trait Instruction {
   val opcode: Byte
@@ -15,6 +17,7 @@ case class Store(loc: U16) extends Instruction { //objref | value -> [] (convert
 }
 case class LoadConstInt(value: Long) extends Instruction {
   val opcode = 1
+
 }
 case class LoadConstFloat(value: Double) extends Instruction {
   val opcode = 2

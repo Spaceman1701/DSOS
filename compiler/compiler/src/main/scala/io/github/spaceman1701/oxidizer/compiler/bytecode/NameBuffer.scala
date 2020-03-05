@@ -34,4 +34,6 @@ class NameBuffer() {
     }
     return strList(ptr.toInt)
   }
+
+  def finalizeList(): List[String] = strList.toList
 }

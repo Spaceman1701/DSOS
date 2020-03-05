@@ -9,7 +9,7 @@ class Unsigned(private val bits: Int, val value: BigInt) {
   def maxValue: BigInt = BigInt(1) << bits
   def minValue = 0
 
-  def toBytes = value.toByteArray
+  def toByteArray = value.toByteArray
 
   override def toString: String = f"${value.toString(10)}"
 }
