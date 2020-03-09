@@ -41,5 +41,12 @@ object Main extends App {
 
   BytecodeWriter.write(preCompiledModule, output)
 
-  preCompiledModule.compile()
+  val compiledModule = preCompiledModule.compile()
+
+  if (args.length > 1) {
+    val outputFile = args(1)
+
+    compiledModule.writeToFile(new File(outputFile))
+  }
+
 }

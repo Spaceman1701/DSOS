@@ -17,9 +17,16 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
       (sizes.::(newTotal), newTotal)
     }
 
+    val (startPtr, stringSegment, _) = stringsBuffer.finalizeList().foldLeft((List[Int](), Array[Byte](), 0)){case ((offsets, segment, totalBytes), string) =>
+      val bytes = string.getBytes.concat(Array[Byte](0))
+      val size = bytes.length //number of bytes for the string plus terminator
+      (offsets.::(totalBytes), segment.concat(bytes),totalBytes + size)
+    }
+
     val processedIns = bytecode.map {
       case Jump(target) => Jump(new U32(bytecodePts(target.value.toInt)))
       case IfFalse(target) => IfFalse(new U32(target.value.toInt))
+      case LoadConstStr(ptr) => LoadConstStr(new U32(startPtr(ptr.value.toInt)))
       case NoOp => throw new IllegalStateException("NoOp was not processed out during initial pre-compile")
       case Break(loopContext) => throw new IllegalStateException("Break was not processed out during initial pre-compile")
       case Continue(loopContext) => throw new IllegalStateException("Continue was not processed out during initial pre-compile")
@@ -61,7 +68,9 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
       }
     }
 
-    new CompiledModule(headerFields.toList, stringsBuffer.finalizeList(), bytes)
+    val headerBytes = headerFields.flatMap{field => field.toBytes}.toArray
+
+    new CompiledModule(headerBytes, stringSegment, bytes)
   }
 
   private def emitBytes(ins: Instruction): Array[Byte] = {
