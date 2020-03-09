@@ -43,6 +43,9 @@ object Main extends App {
 
   val compiledModule = preCompiledModule.compile()
 
+  println("Compiled module debug info:")
+  println(s"Headers: ${compiledModule.headerStartOffset}, Strings: ${compiledModule.stringStartOffset}, Text: ${compiledModule.textStartOffset}")
+
   if (args.length > 1) {
     val outputFile = args(1)
 
