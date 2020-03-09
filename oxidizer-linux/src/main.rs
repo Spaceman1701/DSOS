@@ -2,6 +2,7 @@ use std::io;
 use std::io::prelude::*;
 use std::fs::File;
 use std::process::exit;
+use std::string::FromUtf8Error;
 
 fn main() -> io::Result<()> {
     println!("Hello, world!");
@@ -25,6 +26,22 @@ fn main() -> io::Result<()> {
     println!("Read segment data from the file.");
     println!("Headers: {}, Strings: {}, Text: {}", header_seg, string_seg, text_seg);
 
+    f.seek(io::SeekFrom::Start(string_seg as u64));
+
+    let mut byte_buffer = [0; 1];
+    let mut utf_vec = vec![];
+
+    f.read(&mut byte_buffer);
+    while byte_buffer[0] != 0 {
+        utf_vec.push(byte_buffer[0]);
+        f.read(&mut byte_buffer);
+    }
+
+    let first_const_str = std::string::String::from_utf8(utf_vec);
+    match first_const_str {
+        Ok(the_str) => println!("{}", the_str),
+        Err(_) => println!("couldn't read string constants"),
+    }
     Ok(())
 }
 
