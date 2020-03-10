@@ -4,7 +4,11 @@ use std::fs::File;
 use std::process::exit;
 use std::string::FromUtf8Error;
 
-fn main() -> io::Result<()> {
+fn main() {
+    let _ = load_file();
+}
+
+fn load_file() -> io::Result<()> {
     println!("Hello, world!");
 
     let mut f = File::open("../compiler/example.out")?;
