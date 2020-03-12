@@ -1,8 +1,12 @@
+extern crate core;
+
 use std::io;
 use std::io::prelude::*;
 use std::fs::File;
 use std::process::exit;
-use std::string::FromUtf8Error;
+use program::Program;
+
+mod program;
 
 fn main() {
     let _ = load_file();
@@ -13,53 +17,32 @@ fn load_file() -> io::Result<()> {
 
     let mut f = File::open("../compiler/example.out")?;
 
-    let mut buffer = [0; 3];
-    f.read(&mut buffer);
+    let mut buffer = Vec::new();
+    match f.read_to_end(&mut buffer) {
+        Ok(size) => println!("Read a {} byte file", size),
+        Err(_) => exit(0),
+    }
 
-    if [0xF, 0xE, 0x0] != buffer {
-        println!("Didn't read a valid oxidizer bytecode file");
+    if !validate_file_header(&buffer[0 .. 3]) {
+        println!("didn't find a valid Oxidizer file");
         exit(-1);
     }
 
-    let mut buffer = [0; 12];
-    f.read(&mut buffer);
+    let program = Program::new(buffer);
+
+    println!("Text segment begins at {} bytes", program.segments.text);
 
 
-    let (header_seg, string_seg, text_seg) = read_segment_offsets(&buffer);
-
-    println!("Read segment data from the file.");
-    println!("Headers: {}, Strings: {}, Text: {}", header_seg, string_seg, text_seg);
-
-    f.seek(io::SeekFrom::Start(string_seg as u64));
-
-    let mut byte_buffer = [0; 1];
-    let mut utf_vec = vec![];
-
-    f.read(&mut byte_buffer);
-    while byte_buffer[0] != 0 {
-        utf_vec.push(byte_buffer[0]);
-        f.read(&mut byte_buffer);
+    match program.read_str(0) {
+        Ok(the_str) => println!("the first string is: {}", the_str),
+        Err(_) => {},
     }
 
-    let first_const_str = std::string::String::from_utf8(utf_vec);
-    match first_const_str {
-        Ok(the_str) => println!("{}", the_str),
-        Err(_) => println!("couldn't read string constants"),
-    }
+
+
     Ok(())
 }
 
-fn read_segment_offsets(buffer: &[u8; 12]) -> (u32, u32, u32) {
-    let header_seg = bytes_to_u32(&buffer[0..4]);
-    let string_seg = bytes_to_u32(&buffer[4 .. 8]);
-    let text_seg = bytes_to_u32(&buffer[8 .. 12]);
-
-    (header_seg, string_seg, text_seg)
-}
-
-fn bytes_to_u32(bytes: &[u8]) -> u32 {
-    ((bytes[0] as u32) << 24) |
-    ((bytes[1] as u32) << 16) |
-    ((bytes[2] as u32) << 8)  |
-    (bytes[3] as u32)
+fn validate_file_header(buffer: &[u8]) -> bool {
+    return buffer == [0xF, 0xE, 0x0]
 }
