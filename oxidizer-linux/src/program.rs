@@ -60,7 +60,5 @@ impl Program {
 
         return str::from_utf8(&self.buffer[start .. end]);
     }
-
-
 }
 

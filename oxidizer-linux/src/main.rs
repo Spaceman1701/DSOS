@@ -1,5 +1,3 @@
-extern crate core;
-
 use std::io;
 use std::io::prelude::*;
 use std::fs::File;
@@ -7,6 +5,7 @@ use std::process::exit;
 use program::Program;
 
 mod program;
+mod instruction;
 
 fn main() {
     let _ = load_file();
