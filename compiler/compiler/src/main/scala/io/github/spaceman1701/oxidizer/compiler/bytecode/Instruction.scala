@@ -14,19 +14,24 @@ Basic Load/Store instructions. For simplicity only wide insturctions.
  */
 case class Store(loc: U16) extends Instruction { //objref | value -> [] (convert to objref and place on data stack)
   val opcode = 0
+  override val size = 3
 }
 case class LoadConstInt(value: Long) extends Instruction {
   val opcode = 1
+  override val size = 9
 
 }
 case class LoadConstFloat(value: Double) extends Instruction {
   val opcode = 2
+  override val size = 9
 }
 case class LoadConstStr(ptr: U32) extends Instruction { //load a string from the constant string areas
   val opcode = 3
+  override val size = 5
 }
 case class LoadVar(loc: U16) extends Instruction {
   val opcode = 4
+  override val size = 3
 }
 
 case object CreateObject extends Instruction { // objref(name) -> objref
@@ -123,6 +128,7 @@ case object Call extends Instruction {
 //unconditional jump
 case class Jump(target: U32) extends Instruction {
   val opcode = 22
+  override val size = 5
 }
 
 /*
@@ -134,6 +140,7 @@ so wide instructions are safe as unsigned Int
 //thus, hard limit on 4,294,967,295 per file
 case class IfFalse(target: U32) extends Instruction {
   val opcode = 23
+  override val size = 5
 }
 
 
