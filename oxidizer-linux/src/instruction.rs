@@ -117,9 +117,10 @@ impl Instruction {
 
     fn param_to_u32(data: &[u8]) -> u32 {
         let sized_data = [data[1], data[2], data[3], data[4]];
-        unsafe {
+        let foo = unsafe {
             mem::transmute(sized_data)
-        }
+        };
+        foo
     }
 
     fn param_to_i64(data: &[u8]) -> i64 {

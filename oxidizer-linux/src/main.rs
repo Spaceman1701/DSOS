@@ -1,24 +1,26 @@
+extern crate core;
+
 use std::io;
 use std::io::prelude::*;
 use std::fs::File;
 use std::process::exit;
 use program::Program;
+use vm::VM;
 
 mod program;
 mod instruction;
+mod vm;
 
 fn main() {
     let _ = load_file();
 }
 
 fn load_file() -> io::Result<()> {
-    println!("Hello, world!");
-
     let mut f = File::open("../compiler/example.out")?;
 
     let mut buffer = Vec::new();
     match f.read_to_end(&mut buffer) {
-        Ok(size) => println!("Read a {} byte file", size),
+        Ok(size) => println!("Running Oxidizer Program"),
         Err(_) => exit(0),
     }
 
@@ -29,15 +31,10 @@ fn load_file() -> io::Result<()> {
 
     let program = Program::new(buffer);
 
-    println!("Text segment begins at {} bytes", program.segments.text);
 
+    let mut vm = VM::new(&program);
 
-    match program.read_str(0) {
-        Ok(the_str) => println!("the first string is: {}", the_str),
-        Err(_) => {},
-    }
-
-
+    vm.execute();
 
     Ok(())
 }

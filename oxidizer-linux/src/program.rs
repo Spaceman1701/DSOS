@@ -1,6 +1,7 @@
 use std::str;
 use std::str::Utf8Error;
 
+use instruction::Instruction;
 
 pub struct Program {
     buffer: Vec<u8>,
@@ -18,8 +19,6 @@ impl Program {
         let header_seg = Program::bytes_to_u32(&buffer[0..4]);
         let string_seg = Program::bytes_to_u32(&buffer[4 .. 8]);
         let text_seg = Program::bytes_to_u32(&buffer[8 .. 12]);
-
-        println!("{}, {}, {}", header_seg, string_seg, text_seg);
 
         SegmentMap {
             headers: header_seg as usize,
@@ -47,7 +46,7 @@ impl Program {
 
     pub fn read_str(&self, offset: u32) -> Result<&str, Utf8Error> {
         let mut end_index = 0;
-        let strings_segment = &self.buffer[self.segments.strings..];
+        let strings_segment = &self.buffer[self.segments.strings + offset as usize..];
         for (index, byte) in (strings_segment).iter().enumerate() {
             if *byte == 0 {
                 end_index = index;
@@ -59,6 +58,14 @@ impl Program {
         let end = start + end_index as usize;
 
         return str::from_utf8(&self.buffer[start .. end]);
+    }
+
+    pub fn get_ins(&self, ptr: usize) -> Option<(Instruction, usize)> {
+        Instruction::decode(&self.buffer[self.segments.text + ptr ..])
+    }
+
+    pub fn is_done(&self, ptr: usize) -> bool {
+        self.segments.text + ptr < self.buffer.len()
     }
 }
 
