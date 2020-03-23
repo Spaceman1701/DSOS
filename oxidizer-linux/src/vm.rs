@@ -64,11 +64,11 @@ impl <'program> VM<'program> {
             Instruction::LoadVar(ptr) => {},
             Instruction::CreateObject => {},
             Instruction::SliceList => {},
-            Instruction::Add => {},
-            Instruction::Sub => {},
-            Instruction::Mul => {},
-            Instruction::Div => {},
-            Instruction::Mod => {},
+            Instruction::Add => self.do_add(),
+            Instruction::Sub => self.do_sub(),
+            Instruction::Mul => self.do_mul(),
+            Instruction::Div => self.do_div(),
+            Instruction::Mod => self.do_mod(),
             Instruction::Concat => {},
             Instruction::Pow => {},
             Instruction::LAnd => {},
@@ -79,10 +79,11 @@ impl <'program> VM<'program> {
             Instruction::LoadMember => {},
             Instruction::StoreMember => {},
             Instruction::Call => {
+                println!("Call");
                 let function_name = self.exe_stack.stack.pop();
                 let param_count = self.exe_stack.stack.pop();
 
-                let t = function_name.and_then(|name| param_count.map(|count| (name, count)) )
+                function_name.and_then(|name| param_count.map(|count| (name, count)) )
                     .map(|(name, count)| {
                         match (name, count) {
                             (ObjRef::Str(fun_name), ObjRef::Int(count_num)) => {
@@ -104,8 +105,22 @@ impl <'program> VM<'program> {
                     });
 
             },
-            Instruction::Jump(ptr) => {},
-            Instruction::IfFalse(ptr) => {},
+            Instruction::Jump(ptr) => {
+                println!("Jump {}", ptr);
+                self.ip = ptr as usize;
+                control_change = true;
+            },
+            Instruction::IfFalse(ptr) => {
+                println!("IfFalse {}", ptr);
+                let cond = self.exe_stack.stack.pop();
+                match cond {
+                    Some(ObjRef::Int(0)) => {
+                        self.ip = ptr as usize;
+                        control_change = true;
+                    },
+                    _ => ()
+                }
+            },
             Instruction::Ret => {},
             Instruction::Throw => {},
             Instruction::PostEvent => {},
@@ -128,6 +143,161 @@ impl <'program> VM<'program> {
 
         if !control_change {
             self.ip += skip;
+        }
+    }
+
+    #[inline]
+    fn do_add(&mut self) {
+        println!("add");
+        let first = self.exe_stack.stack.pop().unwrap();
+        let second = self.exe_stack.stack.pop().unwrap();
+        match (first, second) {
+            (ObjRef::Int(left), ObjRef::Int(right)) => {
+                let result = ObjRef::Int(left + right);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Float(right)) => {
+                let result = ObjRef::Float(left + right);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Int(right)) => {
+                let result = ObjRef::Float(left + right as f64);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Int(left), ObjRef::Float(right)) => {
+                let result = ObjRef::Float(left as f64 + right);
+                self.exe_stack.stack.push(result);
+            }
+
+            _ => exit(-1)
+
+        }
+    }
+
+    #[inline]
+    fn do_sub(&mut self) {
+        println!("sub");
+        let first = self.exe_stack.stack.pop().unwrap();
+        let second = self.exe_stack.stack.pop().unwrap();
+        match (first, second) {
+            (ObjRef::Int(left), ObjRef::Int(right)) => {
+                let result = ObjRef::Int(left - right);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Float(right)) => {
+                let result = ObjRef::Float(left - right);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Int(right)) => {
+                let result = ObjRef::Float(left - right as f64);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Int(left), ObjRef::Float(right)) => {
+                let result = ObjRef::Float(left as f64 - right);
+                self.exe_stack.stack.push(result);
+            }
+
+            _ => exit(-1)
+
+        }
+    }
+
+    #[inline]
+    fn do_mul(&mut self) {
+        println!("mul");
+        let first = self.exe_stack.stack.pop().unwrap();
+        let second = self.exe_stack.stack.pop().unwrap();
+        match (first, second) {
+            (ObjRef::Int(left), ObjRef::Int(right)) => {
+                let result = ObjRef::Int(left * right);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Float(right)) => {
+                let result = ObjRef::Float(left * right);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Int(right)) => {
+                let result = ObjRef::Float(left * right as f64);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Int(left), ObjRef::Float(right)) => {
+                let result = ObjRef::Float(left as f64 * right);
+                self.exe_stack.stack.push(result);
+            }
+
+            _ => exit(-1)
+
+        }
+    }
+
+    #[inline]
+    fn do_div(&mut self) {
+        println!("div");
+        let first = self.exe_stack.stack.pop().unwrap();
+        let second = self.exe_stack.stack.pop().unwrap();
+        match (first, second) {
+            (ObjRef::Int(left), ObjRef::Int(right)) => {
+                let result = ObjRef::Int(left / right);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Float(right)) => {
+                let result = ObjRef::Float(left / right);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Int(right)) => {
+                let result = ObjRef::Float(left / right as f64);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Int(left), ObjRef::Float(right)) => {
+                let result = ObjRef::Float(left as f64 / right);
+                self.exe_stack.stack.push(result);
+            }
+
+            _ => exit(-1)
+
+        }
+    }
+
+    #[inline]
+    fn do_mod(&mut self) {
+        println!("mod");
+        let first = self.exe_stack.stack.pop().unwrap();
+        let second = self.exe_stack.stack.pop().unwrap();
+        match (first, second) {
+            (ObjRef::Int(left), ObjRef::Int(right)) => {
+                let result = ObjRef::Int(left % right);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Float(right)) => {
+                let result = ObjRef::Float(left % right);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Int(right)) => {
+                let result = ObjRef::Float(left % right as f64);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Int(left), ObjRef::Float(right)) => {
+                let result = ObjRef::Float(left as f64 % right);
+                self.exe_stack.stack.push(result);
+            }
+
+            _ => exit(-1)
+
         }
     }
 
