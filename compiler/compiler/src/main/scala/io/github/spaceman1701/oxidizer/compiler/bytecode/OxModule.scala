@@ -1,6 +1,6 @@
 package io.github.spaceman1701.oxidizer.compiler.bytecode
 
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer, ByteOrder}
 
 import io.github.spaceman1701.oxidizer.compiler.ast.{ArrayIndex, Binop, ClassDecl, ClassField, ClassMethod, FloatLit, FunCall, FunctionDecl, IntLit, ListComp, ListenExpr, Lit, ModuleDef, Parens, SendExpr, StringLit, Ternary, Unop, Var}
 import io.github.spaceman1701.oxidizer.compiler.util.{LiteralFloatValue, LiteralIntValue, LiteralStringValue, LiteralValue, U32}
@@ -12,21 +12,30 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
   val functionByIndex: Map[Long, String] = functions.map{case (name, index) => (index, name)}
 
   def compile(): CompiledModule = {
-    val (bytecodePts, _) = bytecode.foldLeft((List[Int](), 0)){case ((sizes, totalSize), ins) =>
+    var (bytecodePts, _) = bytecode.foldLeft((List[Int](), 0)){case ((sizes, totalSize), ins) =>
       val newTotal = totalSize + ins.size
-      (sizes.::(newTotal), newTotal)
+      (newTotal :: sizes, newTotal)
     }
 
-    val (startPtr, stringSegment, _) = stringsBuffer.finalizeList().foldLeft((List[Int](), Array[Byte](), 0)){case ((offsets, segment, totalBytes), string) =>
+    bytecodePts = bytecodePts.reverse
+
+    var (startPtr, stringSegment, _) = stringsBuffer.finalizeList().foldLeft((List[Int](), Array[Byte](), 0)){case ((offsets, segment, totalBytes), string) =>
       val bytes = string.getBytes.concat(Array[Byte](0))
       val size = bytes.length //number of bytes for the string plus terminator
-      (offsets.::(totalBytes), segment.concat(bytes),totalBytes + size)
+      (totalBytes :: offsets, segment.concat(bytes),totalBytes + size)
     }
+
+    startPtr = startPtr.reverse
+
+    println(startPtr)
 
     val processedIns = bytecode.map {
       case Jump(target) => Jump(new U32(bytecodePts(target.value.toInt)))
       case IfFalse(target) => IfFalse(new U32(target.value.toInt))
-      case LoadConstStr(ptr) => LoadConstStr(new U32(startPtr(ptr.value.toInt)))
+      case LoadConstStr(ptr) => {
+        println("load str at ", startPtr(ptr.value.toInt))
+        LoadConstStr(new U32(startPtr(ptr.value.toInt)))
+      }
       case NoOp => throw new IllegalStateException("NoOp was not processed out during initial pre-compile")
       case Break(loopContext) => throw new IllegalStateException("Break was not processed out during initial pre-compile")
       case Continue(loopContext) => throw new IllegalStateException("Continue was not processed out during initial pre-compile")
@@ -35,7 +44,7 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
 
     val processedFunctions = functions.map{case (name, index) => (name -> bytecodePts(index.toInt))}
 
-    val bytes = bytecode.foldLeft(Array[Byte]()){case (array, ins) =>
+    val bytes = processedIns.foldLeft(Array[Byte]()){case (array, ins) =>
       val insBytes = emitBytes(ins)
       array.concat(insBytes)
     }
@@ -57,9 +66,17 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
           case Some(value) => value match {
             case LiteralStringValue(v) =>
               val ptr = stringsBuffer.add(v)
-              ByteBuffer.allocate(8).putLong(ptr).array()
-            case LiteralIntValue(v) => ByteBuffer.allocate(8).putLong(v).array()
-            case LiteralFloatValue(v) => ByteBuffer.allocate(8).putDouble(v).array()
+              ByteBuffer.allocate(8)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .putLong(ptr).array()
+            case LiteralIntValue(v) =>
+              ByteBuffer.allocate(8)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .putLong(v).array()
+            case LiteralFloatValue(v) =>
+              ByteBuffer.allocate(8)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .putDouble(v).array()
           }
         }
 
@@ -79,22 +96,27 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
         val param = loc.value.toByteArray
         Array(ins.opcode).concat(param)
       case LoadConstInt(value) =>
-        val param = ByteBuffer.allocate(8).putLong(value).array()
+        val param = ByteBuffer.allocate(8)
+          .order(ByteOrder.LITTLE_ENDIAN)
+          .putLong(value).array()
         Array(ins.opcode).concat(param)
       case LoadConstFloat(value) =>
-        val param = ByteBuffer.allocate(8).putDouble(value).array()
+        val param = ByteBuffer.allocate(8)
+          .order(ByteOrder.LITTLE_ENDIAN)
+          .putDouble(value).array()
         Array(ins.opcode).concat(param)
       case LoadConstStr(ptr) =>
-        val param = ptr.value.toByteArray
+        val param = ptr.toByteArray
+        println(param.length)
         Array(ins.opcode).concat(param)
       case LoadVar(loc) =>
-        val param = loc.value.toByteArray
+        val param = loc.toByteArray
         Array(ins.opcode).concat(param)
       case Jump(target) =>
-        val param = target.value.toByteArray
+        val param = target.toByteArray
         Array(ins.opcode).concat(param)
       case IfFalse(target) =>
-        val param = target.value.toByteArray
+        val param = target.toByteArray
         Array(ins.opcode).concat(param)
       case other => Array(other.opcode)
     }

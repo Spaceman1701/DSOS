@@ -9,7 +9,18 @@ class Unsigned(private val bits: Int, val value: BigInt) {
   def maxValue: BigInt = BigInt(1) << bits
   def minValue = 0
 
-  def toByteArray = value.toByteArray
+  def toByteArray = {
+    val expectedSize = bits / 8
+    println("expected size " + expectedSize)
+    val array = value.toByteArray
+    if (array.length < expectedSize) {
+      val missingBytes = expectedSize - array.length
+      val zeros = Array.ofDim[Byte](missingBytes)
+      array.concat(zeros)
+    } else {
+      array
+    }
+  }
 
   override def toString: String = f"${value.toString(10)}"
 }
