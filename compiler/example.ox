@@ -1,4 +1,9 @@
 
 def main() {
-    println("hello, world!");
+    if 0 {
+        println("bad");
+    } else {
+        println("good");
+    }
+    println("done!");
 }

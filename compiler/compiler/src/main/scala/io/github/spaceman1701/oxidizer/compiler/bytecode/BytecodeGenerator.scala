@@ -161,18 +161,18 @@ class BytecodeGenerator {
     val jumpIns = NoOp >>: this
     generate(ifBody)
     skipIndicies.addOne(NoOp >>: this) //jump past rest of branch
-    val afterIfIns = bytecodeBuffer.size //index of the next instruction generated
+    val afterIfIns = bytecodeBuffer.size - 1 //index of the next instruction generated
     bytecodeBuffer(jumpIns) = IfFalse(new U32(afterIfIns))
     for (elif <- elifs) {
       emitExpr(elif.cond)
       val jumpIns = NoOp >>: this
       generate(elif.body)
-      val afterIfIns = bytecodeBuffer.size //index of the next instruction generated
+      val afterIfIns = bytecodeBuffer.size - 1 //index of the next instruction generated
       bytecodeBuffer(jumpIns) = IfFalse(new U32(afterIfIns))
       skipIndicies.addOne(NoOp >>: this)
     }
     elseBody.foreach(generate)
-    val endOfBranch = bytecodeBuffer.size
+    val endOfBranch = bytecodeBuffer.size - 1
     skipIndicies.foreach(bytecodeBuffer(_) = Jump(new U32(endOfBranch)))
   }
 

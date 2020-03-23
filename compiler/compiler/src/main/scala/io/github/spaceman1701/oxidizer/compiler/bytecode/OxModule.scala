@@ -31,7 +31,7 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
 
     val processedIns = bytecode.map {
       case Jump(target) => Jump(new U32(bytecodePts(target.value.toInt)))
-      case IfFalse(target) => IfFalse(new U32(target.value.toInt))
+      case IfFalse(target) => IfFalse(new U32(bytecodePts(target.value.toInt)))
       case LoadConstStr(ptr) => {
         println("load str at ", startPtr(ptr.value.toInt))
         LoadConstStr(new U32(startPtr(ptr.value.toInt)))
