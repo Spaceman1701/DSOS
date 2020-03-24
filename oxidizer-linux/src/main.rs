@@ -10,6 +10,7 @@ use vm::VM;
 mod program;
 mod instruction;
 mod vm;
+mod memory;
 
 fn main() {
     let _ = load_file();

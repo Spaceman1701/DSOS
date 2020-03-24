@@ -3,11 +3,13 @@ use program;
 use std::process::exit;
 use instruction::Instruction;
 use core::borrow::Borrow;
+use memory;
 
 pub struct VM<'a> {
     program: &'a program::Program,
     ip: usize,
-    exe_stack: ExecutionStack<'a>
+    exe_stack: ExecutionStack<'a>,
+    heap: Vec<memory::OxObj<'a>>
 }
 
 struct ExecutionStack<'a> {
@@ -17,7 +19,8 @@ struct ExecutionStack<'a> {
 enum ObjRef<'a> {
     Str(&'a str),
     Int(i64),
-    Float(f64)
+    Float(f64),
+    Object(Vec<ObjRef<'a>>)
 }
 
 
@@ -28,7 +31,8 @@ impl <'program> VM<'program> {
             ip: 0 as usize,
             exe_stack: ExecutionStack {
                 stack: Vec::new()
-            }
+            },
+            heap: vec![]
         }
     }
 
@@ -69,7 +73,7 @@ impl <'program> VM<'program> {
             Instruction::Mul => self.do_mul(),
             Instruction::Div => self.do_div(),
             Instruction::Mod => self.do_mod(),
-            Instruction::Concat => {},
+            Instruction::Concat => self.do_concat(),
             Instruction::Pow => {},
             Instruction::LAnd => {},
             Instruction::LOr => {},
@@ -96,6 +100,7 @@ impl <'program> VM<'program> {
                                         ObjRef::Str(to_print) => {println!("{}", to_print)},
                                         ObjRef::Int(to_print) => {println!("{}", to_print)},
                                         ObjRef::Float(to_print) => {println!("{}", to_print)},
+                                        ObjRef::Object(ref members) => {println!("Object with {} fields", members.len())}
                                     }
                                 }
                             }
@@ -299,6 +304,18 @@ impl <'program> VM<'program> {
             _ => exit(-1)
 
         }
+    }
+
+    #[inline]
+    fn do_concat(&mut self) {
+        println!("Concat");
+//        let first = self.exe_stack.stack.pop().unwrap();
+//        let second = self.exe_stack.stack.pop().unwrap();
+//        let concat_str = match (first, second) {
+//            (ObjRef::Str(left), ObjRef::Str(right)) => left + right,
+//            (ObjRef::Str(left), ObjRef::Int(right)) => left + right.to_string(),
+//            _ => exit(-1)
+//        };
     }
 
     fn read_string_or_exit(&self, ptr: u32) -> &'program str {
