@@ -1,6 +1,5 @@
-use instruction::Instruction::{Store, LoadConstInt, LoadConstFloat, LoadConstStr, LoadVar, CreateObject, SliceList, Add, Sub, Mul, Div, Mod, Concat, Pow, LAnd, LOr, CompG, CompL, CompEq, LoadMember, StoreMember, Call, Jump, IfFalse, Ret, Throw, PostEvent, WaitEvent, Spawn, WriteChannel, ReadChannel, Not, XOr, BAnd, BOr, LeftShift, RightShift, URightShift, Modulo, BCompliment, Dup, Consume};
 use std::mem;
-
+use crate::instruction::Instruction::*;
 pub enum Instruction {
     Store(u16),
     LoadConstInt(i64),
@@ -104,7 +103,10 @@ impl Instruction {
             0x27 => Some((BCompliment, 1 as usize)),
             0x28 => Some((Dup, 1 as usize)),
             0x29 => Some((Consume, 1 as usize)),
-            _ => None
+            _ => {
+                println!("bad opcode {}", bytes[0]);
+                None
+            }
         }
     }
 

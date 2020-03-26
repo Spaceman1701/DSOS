@@ -1,5 +1,3 @@
-extern crate core;
-
 use std::io;
 use std::io::prelude::*;
 use std::fs::File;
@@ -11,6 +9,7 @@ mod program;
 mod instruction;
 mod vm;
 mod memory;
+mod object;
 
 fn main() {
     let _ = load_file();

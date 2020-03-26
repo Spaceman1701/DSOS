@@ -1,7 +1,7 @@
 use std::str;
 use std::str::Utf8Error;
 
-use instruction::Instruction;
+use crate::instruction::Instruction;
 
 pub struct Program {
     buffer: Vec<u8>,
