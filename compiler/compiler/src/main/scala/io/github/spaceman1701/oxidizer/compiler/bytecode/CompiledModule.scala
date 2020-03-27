@@ -20,7 +20,12 @@ class CompiledModule(val headerSegment: Array[Byte], val stringSegment: Array[By
       outputFile.createNewFile()
     }
 
-    println(textSegment(0), textSegment(1), textSegment(2), textSegment(3), textSegment(4))
+    println(textSegment.length)
+
+    if (outputFile.exists()) {
+      outputFile.delete()
+      outputFile.createNewFile()
+    }
 
     Files.write(path, fileData, StandardOpenOption.WRITE)
   }
