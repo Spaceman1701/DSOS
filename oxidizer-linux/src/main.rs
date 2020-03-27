@@ -20,7 +20,7 @@ fn load_file() -> io::Result<()> {
 
     let mut buffer = Vec::new();
     match f.read_to_end(&mut buffer) {
-        Ok(_) => println!("Running Oxidizer Program"),
+        Ok(size) => println!("Running Oxidizer Program {}", size),
         Err(_) => exit(0),
     }
 

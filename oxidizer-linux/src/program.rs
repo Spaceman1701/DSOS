@@ -65,7 +65,7 @@ impl Program {
     }
 
     pub fn is_done(&self, ptr: usize) -> bool {
-        self.segments.text + ptr < self.buffer.len()
+        self.segments.text + ptr >= self.buffer.len()
     }
 }
 

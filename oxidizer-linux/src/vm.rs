@@ -32,8 +32,7 @@ impl <'program> VM<'program> {
 
     pub fn execute(&'program mut self) {
         let mut ip = self.ip;
-        let mut i = 0;
-        while self.program.is_done(ip) {
+        while !self.program.is_done(ip) {
             match self.program.get_ins(ip) {
                 None => {
                     eprintln!("instruction decode error at {}", ip);
@@ -43,11 +42,6 @@ impl <'program> VM<'program> {
                 },
             }
             ip = self.ip;
-//
-            i += 1;
-            if i > 3 {
-                break;
-            }
         }
     }
 
@@ -57,12 +51,6 @@ impl <'program> VM<'program> {
             Instruction::Store(ptr) => {},
             Instruction::LoadConstInt(value) => {
                 let obj = self.allocate_and_assign_int(value);
-
-                match &obj {
-                    ObjRef::Int(i) => println!("{}", i),
-                    _ => unreachable!()
-                }
-
                 self.exe_stack.stack.push(obj);
             },
             Instruction::LoadConstFloat(value) => {},
@@ -89,19 +77,19 @@ impl <'program> VM<'program> {
             Instruction::LoadMember => {},
             Instruction::StoreMember => {},
             Instruction::Call => {
-                println!("Call");
+                println!("debug CALL");
                 let function_name = self.exe_stack.stack.pop();
                 let param_count = self.exe_stack.stack.pop();
 
                 function_name.and_then(|name| param_count.map(|count| (name, count)) )
                     .map(|(name, count)| {
-                        match (name, count) {
+                        match (&name, &count) {
                             (ObjRef::String(fun_name), ObjRef::Int(count_num)) => {
                                 let mut params: Vec<ObjRef> = Vec::new();
-                                for _ in 0..*count_num {
+                                for _ in 0..**count_num {
                                     params.push(self.exe_stack.stack.pop().unwrap());
                                 }
-                                if fun_name == "println" {
+                                if *fun_name == "println" {
                                     match params[0] {
                                         ObjRef::String(ref to_print) => {println!("{}", to_print)},
                                         ObjRef::Int(ref to_print) => {println!("{}", to_print)},
@@ -157,11 +145,13 @@ impl <'program> VM<'program> {
         }
     }
 
+
+
     #[inline]
     fn do_add(&mut self) {
-        println!("add");
-        let first = self.exe_stack.stack.pop().unwrap();
+        println!("debug: ADD");
         let second = self.exe_stack.stack.pop().unwrap();
+        let first = self.exe_stack.stack.pop().unwrap();
         match (first, second) {
             (ObjRef::Int(left), ObjRef::Int(right)) => {
                 let value = *left + *right;
@@ -196,125 +186,145 @@ impl <'program> VM<'program> {
     #[inline]
     fn do_sub(&mut self) {
         println!("sub");
-//        let first = self.exe_stack.stack.pop().unwrap();
-//        let second = self.exe_stack.stack.pop().unwrap();
-//        match (first, second) {
-//            (ObjRef::Int(left), ObjRef::Int(right)) => {
-//                let result = ObjRef::Int(left - right);
-//                self.exe_stack.stack.push(result);
-//            }
-//
-//            (ObjRef::Float(left), ObjRef::Float(right)) => {
-//                let result = ObjRef::Float(left - right);
-//                self.exe_stack.stack.push(result);
-//            }
-//
-//            (ObjRef::Float(left), ObjRef::Int(right)) => {
-//                let result = ObjRef::Float(left - right as f64);
-//                self.exe_stack.stack.push(result);
-//            }
-//
-//            (ObjRef::Int(left), ObjRef::Float(right)) => {
-//                let result = ObjRef::Float(left as f64 - right);
-//                self.exe_stack.stack.push(result);
-//            }
-//
-//            _ => exit(-1)
-//
-//        }
+        let second = self.exe_stack.stack.pop().unwrap();
+        let first = self.exe_stack.stack.pop().unwrap();
+        match (first, second) {
+            (ObjRef::Int(left), ObjRef::Int(right)) => {
+                let value = *left - *right;
+                println!("ADD RESULT: {}", value);
+                let result = self.allocate_and_assign_int(value);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Float(right)) => {
+                let value = *left - *right;
+                let result = self.allocate_and_assign_float(value);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Int(right)) => {
+                let value = *left - ((*right) as f64);
+                let result = self.allocate_and_assign_float(value);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Int(left), ObjRef::Float(right)) => {
+                let value = ((*left) as f64) - *right;
+                let result = self.allocate_and_assign_float(value);
+                self.exe_stack.stack.push(result);
+            }
+
+            _ => exit(-1)
+
+        }
     }
 
     #[inline]
     fn do_mul(&mut self) {
         println!("mul");
-//        let first = self.exe_stack.stack.pop().unwrap();
-//        let second = self.exe_stack.stack.pop().unwrap();
-//        match (first, second) {
-//            (ObjRef::Int(left), ObjRef::Int(right)) => {
-//                let result = ObjRef::Int(left * right);
-//                self.exe_stack.stack.push(result);
-//            }
-//
-//            (ObjRef::Float(left), ObjRef::Float(right)) => {
-//                let result = ObjRef::Float(left * right);
-//                self.exe_stack.stack.push(result);
-//            }
-//
-//            (ObjRef::Float(left), ObjRef::Int(right)) => {
-//                let result = ObjRef::Float(left * right as f64);
-//                self.exe_stack.stack.push(result);
-//            }
-//
-//            (ObjRef::Int(left), ObjRef::Float(right)) => {
-//                let result = ObjRef::Float(left as f64 * right);
-//                self.exe_stack.stack.push(result);
-//            }
-//
-//            _ => exit(-1)
-//
-//        }
+        let second = self.exe_stack.stack.pop().unwrap();
+        let first = self.exe_stack.stack.pop().unwrap();
+        match (first, second) {
+            (ObjRef::Int(left), ObjRef::Int(right)) => {
+                let value = *left * *right;
+                println!("ADD RESULT: {}", value);
+                let result = self.allocate_and_assign_int(value);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Float(right)) => {
+                let value = *left * *right;
+                let result = self.allocate_and_assign_float(value);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Int(right)) => {
+                let value = *left * ((*right) as f64);
+                let result = self.allocate_and_assign_float(value);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Int(left), ObjRef::Float(right)) => {
+                let value = ((*left) as f64) * *right;
+                let result = self.allocate_and_assign_float(value);
+                self.exe_stack.stack.push(result);
+            }
+
+            _ => exit(-1)
+
+        }
     }
 
     #[inline]
     fn do_div(&mut self) {
         println!("div");
-//        let first = self.exe_stack.stack.pop().unwrap();
-//        let second = self.exe_stack.stack.pop().unwrap();
-//        match (first, second) {
-//            (ObjRef::Int(left), ObjRef::Int(right)) => {
-//                let result = ObjRef::Int(left / right);
-//                self.exe_stack.stack.push(result);
-//            }
-//
-//            (ObjRef::Float(left), ObjRef::Float(right)) => {
-//                let result = ObjRef::Float(left / right);
-//                self.exe_stack.stack.push(result);
-//            }
-//
-//            (ObjRef::Float(left), ObjRef::Int(right)) => {
-//                let result = ObjRef::Float(left / right as f64);
-//                self.exe_stack.stack.push(result);
-//            }
-//
-//            (ObjRef::Int(left), ObjRef::Float(right)) => {
-//                let result = ObjRef::Float(left as f64 / right);
-//                self.exe_stack.stack.push(result);
-//            }
-//
-//            _ => exit(-1)
-//
-//        }
+        let second = self.exe_stack.stack.pop().unwrap();
+        let first = self.exe_stack.stack.pop().unwrap();
+        match (first, second) {
+            (ObjRef::Int(left), ObjRef::Int(right)) => {
+                let value = *left / *right;
+                println!("DIV RESULT: {} / {} = {}", *left, *right, value);
+                let result = self.allocate_and_assign_int(value);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Float(right)) => {
+                let value = *left / *right;
+                let result = self.allocate_and_assign_float(value);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Int(right)) => {
+                let value = *left / ((*right) as f64);
+                let result = self.allocate_and_assign_float(value);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Int(left), ObjRef::Float(right)) => {
+                let value = ((*left) as f64) / *right;
+                let result = self.allocate_and_assign_float(value);
+                self.exe_stack.stack.push(result);
+            }
+
+            _ => exit(-1)
+
+        }
     }
 
     #[inline]
     fn do_mod(&mut self) {
         println!("mod");
-//        let first = self.exe_stack.stack.pop().unwrap();
-//        let second = self.exe_stack.stack.pop().unwrap();
-//        match (first, second) {
-//            (ObjRef::Int(left), ObjRef::Int(right)) => {
-//                let result = ObjRef::Int(left % right);
-//                self.exe_stack.stack.push(result);
-//            }
-//
-//            (ObjRef::Float(left), ObjRef::Float(right)) => {
-//                let result = ObjRef::Float(left % right);
-//                self.exe_stack.stack.push(result);
-//            }
-//
-//            (ObjRef::Float(left), ObjRef::Int(right)) => {
-//                let result = ObjRef::Float(left % right as f64);
-//                self.exe_stack.stack.push(result);
-//            }
-//
-//            (ObjRef::Int(left), ObjRef::Float(right)) => {
-//                let result = ObjRef::Float(left as f64 % right);
-//                self.exe_stack.stack.push(result);
-//            }
-//
-//            _ => exit(-1)
-//
-//        }
+        let first = self.exe_stack.stack.pop().unwrap();
+        let second = self.exe_stack.stack.pop().unwrap();
+        match (first, second) {
+            (ObjRef::Int(left), ObjRef::Int(right)) => {
+                let value = *left % *right;
+                println!("ADD RESULT: {}", value);
+                let result = self.allocate_and_assign_int(value);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Float(right)) => {
+                let value = *left % *right;
+                let result = self.allocate_and_assign_float(value);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Float(left), ObjRef::Int(right)) => {
+                let value = *left % ((*right) as f64);
+                let result = self.allocate_and_assign_float(value);
+                self.exe_stack.stack.push(result);
+            }
+
+            (ObjRef::Int(left), ObjRef::Float(right)) => {
+                let value = ((*left) as f64) % *right;
+                let result = self.allocate_and_assign_float(value);
+                self.exe_stack.stack.push(result);
+            }
+
+            _ => exit(-1)
+
+        }
     }
 
     #[inline]

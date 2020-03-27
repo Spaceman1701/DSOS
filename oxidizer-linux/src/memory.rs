@@ -84,8 +84,8 @@ impl <'heap> Heap<'heap> {
         unsafe {
             match &kind {
                 AllocType::Int => {
-                    let mut target = &mut self.memory[ptr..ptr + amount + 1];
-                    let (_, body, _) = target.align_to_mut::<OxObjInt>();
+                    let mut target = &mut self.memory[ptr..ptr + amount];
+                    let (before, body, after) = target.align_to_mut::<OxObjInt>();
 
                     let allocation = &mut body[0] as *mut OxObjInt;
 
