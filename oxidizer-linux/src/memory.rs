@@ -41,6 +41,7 @@ pub struct AllocHeader {
 pub struct OxAllocator {
     top: usize,
     free: usize,
+    allocated_count: usize,
 }
 
 pub struct Heap<'heap> {
@@ -65,6 +66,7 @@ impl <'heap> Heap<'heap> {
             allocator: OxAllocator {
                 top: 0,
                 free: 4096,
+                allocated_count: 0
             },
             phantom: PhantomData
         }
@@ -79,7 +81,7 @@ impl <'heap> Heap<'heap> {
                 self.expand_memory();
             }
         }
-
+        self.allocator.allocated_count += 1;
         let layout = self.allocator.allocate(amount);
         let ptr = layout.ptr;
         unsafe {
@@ -125,6 +127,7 @@ impl <'heap> Heap<'heap> {
                 self.expand_memory();
             }
         }
+        self.allocator.allocated_count += 1;
 
         let layout = self.allocator.allocate(amount);
 
@@ -193,6 +196,27 @@ impl <'heap> Heap<'heap> {
 
 
     fn compactify_memory(&mut self) {
+        //TODO: update references to moved objects
+        //TODO: ensure alignment
+        const HEADER_SIZE: usize = size_of::<AllocHeader>();
+        unsafe {
+
+            let mut next_ptr = 0;
+            let mut visited = 0;
+            while self.allocator.allocated_count < visited {
+                let (_, header_raw, _) = self.memory[..HEADER_SIZE].align_to::<AllocHeader>();
+                let header = &header_raw[0];
+
+                if header.reference_count > 0 {
+                    next_ptr = header.size as usize + header.padding_after as usize;
+                    visited += 1;
+                } else {
+                    self.memory.drain(next_ptr .. next_ptr + header.size as usize + header.padding_after as usize);
+                    self.allocator.allocated_count -= 1;
+                }
+
+            }
+        }
     }
 
     fn expand_memory(&mut self) {
