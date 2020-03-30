@@ -34,7 +34,8 @@ pub enum AllocType {
 pub struct AllocHeader {
     reference_count: u32,
     size: u32,
-    mem_type: AllocType
+    padding_after: u8,
+    mem_type: AllocType,
 }
 
 pub struct OxAllocator {
@@ -46,6 +47,12 @@ pub struct Heap<'heap> {
     memory: Vec<u8>,
     allocator: OxAllocator,
     phantom: PhantomData<&'heap u8> //
+}
+
+struct AllocLayout {
+    ptr: usize,
+    amount: usize,
+    padding: u8,
 }
 
 impl <'heap> Heap<'heap> {
@@ -73,12 +80,13 @@ impl <'heap> Heap<'heap> {
             }
         }
 
-        let ptr = self.allocator.allocate(amount);
-
+        let layout = self.allocator.allocate(amount);
+        let ptr = layout.ptr;
         unsafe {
-            let header = self.leak_header(ptr);
+            let header = self.leak_header(layout.ptr);
             (*header).size = amount as u32;
             (*header).mem_type = AllocType::String;
+            (*header).padding_after = layout.padding;
             (*header).reference_count = 1;
             let mut str_target = &mut self.memory[ptr+size_of::<AllocHeader>() .. ptr+size_of::<AllocHeader>() + value.len()];
 
@@ -118,27 +126,33 @@ impl <'heap> Heap<'heap> {
             }
         }
 
-        let ptr = self.allocator.allocate(amount);
+        let layout = self.allocator.allocate(amount);
 
         unsafe {
             match &kind {
                 AllocType::Int => {
-                    let mut target = &mut self.memory[ptr..ptr + amount];
+                    let mut target = &mut self.memory[layout.range()];
                     let (before, body, after) = target.align_to_mut::<OxObjInt>();
+
+                    if body.len() == 0 {
+                        println!("error aligning {} bytes. Before {}, After {}", amount, before.len(), after.len());
+                        exit(-1)
+                    }
 
                     let allocation = &mut body[0] as *mut OxObjInt;
 
                     (*allocation).header = AllocHeader {
                         reference_count: 1,
                         size: amount as u32,
-                        mem_type: kind
+                        padding_after: layout.padding,
+                        mem_type: kind,
                     };
                     (*allocation).data = 0;
 
                     return ObjRef::Int(&mut (*allocation).header, &mut (*allocation).data);
                 },
                 AllocType::Float => {
-                    let mut target = &mut self.memory[ptr..ptr + amount];
+                    let mut target = &mut self.memory[layout.range()];
                     let (_, body, _) = target.align_to_mut::<OxObjFloat>();
 
                     let allocation = &mut body[0] as *mut OxObjFloat;
@@ -146,6 +160,7 @@ impl <'heap> Heap<'heap> {
                     (*allocation).header = AllocHeader {
                         reference_count: 1,
                         size: amount as u32,
+                        padding_after: layout.padding,
                         mem_type: kind
                     };
                     (*allocation).data = 0f64;
@@ -153,7 +168,7 @@ impl <'heap> Heap<'heap> {
                     return ObjRef::Float(&mut (*allocation).header, &mut (*allocation).data);
                 },
                 AllocType::Object => {
-                    let mut target = &mut self.memory[ptr..ptr + amount];
+                    let mut target = &mut self.memory[layout.range()];
                     let (_, body, _) = target.align_to_mut::<OxObjObject>();
 
                     let allocation = &mut body[0] as *mut OxObjObject;
@@ -161,6 +176,7 @@ impl <'heap> Heap<'heap> {
                     (*allocation).header = AllocHeader {
                         reference_count: 1,
                         size: amount as u32,
+                        padding_after: layout.padding,
                         mem_type: kind
                     };
                     (*allocation).data = Object {
@@ -191,10 +207,25 @@ impl OxAllocator {
         self.top + amount >= memory.len()
     }
 
-    fn allocate(&mut self, amount: usize) -> usize {
+    fn allocate(&mut self, amount: usize) -> AllocLayout {
         let ptr = self.top;
         self.top = self.top + amount;
-        ptr
+        let aligned_address = (self.top + 8 - 1) & (!(8 - 1 ));
+
+        let padding = (aligned_address - self.top) as u8;
+        self.top = aligned_address;
+
+        AllocLayout {
+            ptr,
+            amount,
+            padding
+        }
+    }
+}
+
+impl AllocLayout {
+    fn range(&self) -> std::ops::Range<usize> {
+        self.ptr .. self.ptr + self.amount + self.padding as usize
     }
 }
 

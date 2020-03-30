@@ -62,7 +62,10 @@ impl <'program> VM<'program> {
                 let obj = self.allocate_and_assign_int(value);
                 self.exe_stack.stack.push(obj);
             },
-            Instruction::LoadConstFloat(value) => {},
+            Instruction::LoadConstFloat(value) => {
+                let obj = self.allocate_and_assign_float(value);
+                self.exe_stack.stack.push(obj);
+            },
             Instruction::LoadConstStr(ptr) => {
                 let the_str = self.read_string_or_exit(ptr);
                 let obj = ObjRef::String(None, the_str);
@@ -108,6 +111,8 @@ impl <'program> VM<'program> {
                                         ObjRef::Float(_, ref to_print) => {println!("{}", to_print)},
                                         ObjRef::Object(_, ref obj) => {println!("Object with {} fields", obj.fields.len())}
                                     }
+                                } else {
+
                                 }
                             }
                             _ => exit(-1)
@@ -351,6 +356,27 @@ impl <'program> VM<'program> {
                 let result = self.heap.allocate_str(concat.as_str());
                 self.exe_stack.stack.push(result);
             }
+            (ObjRef::Int(_, left), ObjRef::String(_, right)) => {
+                let concat = format!("{}{}", left, right);
+                let result = self.heap.allocate_str(concat.as_str());
+                self.exe_stack.stack.push(result);
+            }
+            (ObjRef::Float(_, left), ObjRef::String(_, right)) => {
+                let concat = format!("{}{}", left, right);
+                let result = self.heap.allocate_str(concat.as_str());
+                self.exe_stack.stack.push(result);
+            }
+            (ObjRef::String(_, left), ObjRef::Int(_, right)) => {
+                let concat = format!("{}{}", left, right);
+                let result = self.heap.allocate_str(concat.as_str());
+                self.exe_stack.stack.push(result);
+            }
+            (ObjRef::String(_, left), ObjRef::Float(_, right)) => {
+                let concat = format!("{}{}", left, right);
+                let result = self.heap.allocate_str(concat.as_str());
+                self.exe_stack.stack.push(result);
+            }
+
             _ => panic!("alkdjaklsdjakdsl")
         }
     }
