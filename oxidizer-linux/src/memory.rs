@@ -63,6 +63,45 @@ impl <'heap> Heap<'heap> {
         }
     }
 
+    pub fn allocate_str(&mut self, value: &str) -> ObjRef<'heap> {
+        let amount = value.len() + size_of::<AllocHeader>();
+        if !self.allocator.is_space_available(&self.memory, amount) {
+            self.compactify_memory();
+
+            if !self.allocator.is_space_available(&self.memory, amount) {
+                self.expand_memory();
+            }
+        }
+
+        let ptr = self.allocator.allocate(amount);
+
+        unsafe {
+            let header = self.leak_header(ptr);
+            (*header).size = amount as u32;
+            (*header).mem_type = AllocType::String;
+            (*header).reference_count = 1;
+            let mut str_target = &mut self.memory[ptr+size_of::<AllocHeader>() .. ptr+size_of::<AllocHeader>() + value.len()];
+
+            for (index, byte) in value.as_bytes().iter().enumerate() {
+                str_target[index] = byte.clone();
+            }
+
+            let empty_pt = &str_target[0] as *const u8;
+
+            match std::str::from_utf8(std::slice::from_raw_parts(empty_pt, str_target.len())) {
+                Ok(reference) => ObjRef::String(Some(&mut *header as &mut AllocHeader), reference),
+                Err(_) => exit(-1),
+            }
+        }
+    }
+
+    unsafe fn leak_header(&mut self, begin: usize) -> *mut AllocHeader {
+        let mut header_target = &mut self.memory[begin..begin+size_of::<AllocHeader>()];
+        let (_, body, _) = header_target.align_to_mut::<AllocHeader>();
+        let header = &mut body[0] as *mut AllocHeader;
+        header
+    }
+
     pub fn allocate(&mut self, kind: AllocType) -> ObjRef<'heap> {
         let amount = match kind {
             AllocType::Int => size_of::<OxObjInt>(),
@@ -96,7 +135,7 @@ impl <'heap> Heap<'heap> {
                     };
                     (*allocation).data = 0;
 
-                    return ObjRef::Int(&mut (*allocation).data);
+                    return ObjRef::Int(&mut (*allocation).header, &mut (*allocation).data);
                 },
                 AllocType::Float => {
                     let mut target = &mut self.memory[ptr..ptr + amount];
@@ -111,7 +150,7 @@ impl <'heap> Heap<'heap> {
                     };
                     (*allocation).data = 0f64;
 
-                    return ObjRef::Float(&mut (*allocation).data);
+                    return ObjRef::Float(&mut (*allocation).header, &mut (*allocation).data);
                 },
                 AllocType::Object => {
                     let mut target = &mut self.memory[ptr..ptr + amount];
@@ -128,7 +167,7 @@ impl <'heap> Heap<'heap> {
                         fields: HashMap::new()
                     };
 
-                    return ObjRef::Object(&mut (*allocation).data);
+                    return ObjRef::Object(&mut (*allocation).header, &mut (*allocation).data);
                 },
                 AllocType::String => exit(-1),
             }

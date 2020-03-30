@@ -10,6 +10,7 @@ mod instruction;
 mod vm;
 mod memory;
 mod object;
+mod call_stack;
 
 fn main() {
     let _ = load_file();

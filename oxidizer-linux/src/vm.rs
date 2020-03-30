@@ -4,12 +4,14 @@ use crate::instruction::Instruction;
 use crate::memory;
 use crate::memory::{Heap, AllocType};
 use crate::object::{ObjRef};
+use crate::call_stack::{CallStack, StackFrame};
 
 pub struct VM<'a> {
     program: &'a program::Program,
     ip: usize,
     exe_stack: ExecutionStack<'a>,
-    heap: Heap<'a>
+    heap: Heap<'a>,
+    call_stack: CallStack<'a>
 }
 
 struct ExecutionStack<'a> {
@@ -26,7 +28,8 @@ impl <'program> VM<'program> {
             exe_stack: ExecutionStack {
                 stack: Vec::new()
             },
-            heap: memory::Heap::new()
+            heap: memory::Heap::new(),
+            call_stack: CallStack::new()
         }
     }
 
@@ -48,18 +51,27 @@ impl <'program> VM<'program> {
     fn perform_action(&mut self, ins: Instruction, skip: usize) {
         let mut control_change = false;
         match ins {
-            Instruction::Store(ptr) => {},
+            Instruction::Store(ptr) => {
+                println!("Store {}", ptr);
+                let obj = self.exe_stack.stack.pop().unwrap();
+                let frame = self.call_stack.peek();
+                frame.store(&obj, ptr);
+            },
             Instruction::LoadConstInt(value) => {
+                println!("load const int {}", value);
                 let obj = self.allocate_and_assign_int(value);
                 self.exe_stack.stack.push(obj);
             },
             Instruction::LoadConstFloat(value) => {},
             Instruction::LoadConstStr(ptr) => {
                 let the_str = self.read_string_or_exit(ptr);
-                let obj = ObjRef::String(the_str);
+                let obj = ObjRef::String(None, the_str);
                 self.exe_stack.stack.push(obj);
             },
-            Instruction::LoadVar(ptr) => {},
+            Instruction::LoadVar(ptr) => {
+                let obj = self.call_stack.peek().get(ptr).unwrap();
+                self.exe_stack.stack.push(obj);
+            },
             Instruction::CreateObject => {},
             Instruction::SliceList => {},
             Instruction::Add => self.do_add(),
@@ -84,17 +96,17 @@ impl <'program> VM<'program> {
                 function_name.and_then(|name| param_count.map(|count| (name, count)) )
                     .map(|(name, count)| {
                         match (&name, &count) {
-                            (ObjRef::String(fun_name), ObjRef::Int(count_num)) => {
+                            (ObjRef::String(_, fun_name), ObjRef::Int(_, count_num)) => {
                                 let mut params: Vec<ObjRef> = Vec::new();
                                 for _ in 0..**count_num {
                                     params.push(self.exe_stack.stack.pop().unwrap());
                                 }
                                 if *fun_name == "println" {
                                     match params[0] {
-                                        ObjRef::String(ref to_print) => {println!("{}", to_print)},
-                                        ObjRef::Int(ref to_print) => {println!("{}", to_print)},
-                                        ObjRef::Float(ref to_print) => {println!("{}", to_print)},
-                                        ObjRef::Object(ref obj) => {println!("Object with {} fields", obj.fields.len())}
+                                        ObjRef::String(_, ref to_print) => {println!("{}", to_print)},
+                                        ObjRef::Int(_, ref to_print) => {println!("{}", to_print)},
+                                        ObjRef::Float(_, ref to_print) => {println!("{}", to_print)},
+                                        ObjRef::Object(_, ref obj) => {println!("Object with {} fields", obj.fields.len())}
                                     }
                                 }
                             }
@@ -113,7 +125,7 @@ impl <'program> VM<'program> {
                 println!("IfFalse {}", ptr);
                 let cond = self.exe_stack.stack.pop();
                 match cond {
-                    Some(ObjRef::Int(0)) => {
+                    Some(ObjRef::Int(_, 0)) => {
                         self.ip = ptr as usize;
                         control_change = true;
                     },
@@ -153,26 +165,26 @@ impl <'program> VM<'program> {
         let second = self.exe_stack.stack.pop().unwrap();
         let first = self.exe_stack.stack.pop().unwrap();
         match (first, second) {
-            (ObjRef::Int(left), ObjRef::Int(right)) => {
+            (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
                 let value = *left + *right;
                 println!("ADD RESULT: {}", value);
                 let result = self.allocate_and_assign_int(value);
                 self.exe_stack.stack.push(result);
             }
 
-            (ObjRef::Float(left), ObjRef::Float(right)) => {
+            (ObjRef::Float(_, left), ObjRef::Float(_, right)) => {
                 let value = *left + *right;
                 let result = self.allocate_and_assign_float(value);
                 self.exe_stack.stack.push(result);
             }
 
-            (ObjRef::Float(left), ObjRef::Int(right)) => {
+            (ObjRef::Float(_, left), ObjRef::Int(_, right)) => {
                 let value = *left + ((*right) as f64);
                 let result = self.allocate_and_assign_float(value);
                 self.exe_stack.stack.push(result);
             }
 
-            (ObjRef::Int(left), ObjRef::Float(right)) => {
+            (ObjRef::Int(_, left), ObjRef::Float(_, right)) => {
                 let value = ((*left) as f64) + *right;
                 let result = self.allocate_and_assign_float(value);
                 self.exe_stack.stack.push(result);
@@ -189,26 +201,26 @@ impl <'program> VM<'program> {
         let second = self.exe_stack.stack.pop().unwrap();
         let first = self.exe_stack.stack.pop().unwrap();
         match (first, second) {
-            (ObjRef::Int(left), ObjRef::Int(right)) => {
+            (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
                 let value = *left - *right;
                 println!("ADD RESULT: {}", value);
                 let result = self.allocate_and_assign_int(value);
                 self.exe_stack.stack.push(result);
             }
 
-            (ObjRef::Float(left), ObjRef::Float(right)) => {
+            (ObjRef::Float(_, left), ObjRef::Float(_, right)) => {
                 let value = *left - *right;
                 let result = self.allocate_and_assign_float(value);
                 self.exe_stack.stack.push(result);
             }
 
-            (ObjRef::Float(left), ObjRef::Int(right)) => {
+            (ObjRef::Float(_, left), ObjRef::Int(_, right)) => {
                 let value = *left - ((*right) as f64);
                 let result = self.allocate_and_assign_float(value);
                 self.exe_stack.stack.push(result);
             }
 
-            (ObjRef::Int(left), ObjRef::Float(right)) => {
+            (ObjRef::Int(_, left), ObjRef::Float(_, right)) => {
                 let value = ((*left) as f64) - *right;
                 let result = self.allocate_and_assign_float(value);
                 self.exe_stack.stack.push(result);
@@ -225,26 +237,26 @@ impl <'program> VM<'program> {
         let second = self.exe_stack.stack.pop().unwrap();
         let first = self.exe_stack.stack.pop().unwrap();
         match (first, second) {
-            (ObjRef::Int(left), ObjRef::Int(right)) => {
+            (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
                 let value = *left * *right;
                 println!("ADD RESULT: {}", value);
                 let result = self.allocate_and_assign_int(value);
                 self.exe_stack.stack.push(result);
             }
 
-            (ObjRef::Float(left), ObjRef::Float(right)) => {
+            (ObjRef::Float(_, left), ObjRef::Float(_, right)) => {
                 let value = *left * *right;
                 let result = self.allocate_and_assign_float(value);
                 self.exe_stack.stack.push(result);
             }
 
-            (ObjRef::Float(left), ObjRef::Int(right)) => {
+            (ObjRef::Float(_, left), ObjRef::Int(_, right)) => {
                 let value = *left * ((*right) as f64);
                 let result = self.allocate_and_assign_float(value);
                 self.exe_stack.stack.push(result);
             }
 
-            (ObjRef::Int(left), ObjRef::Float(right)) => {
+            (ObjRef::Int(_, left), ObjRef::Float(_, right)) => {
                 let value = ((*left) as f64) * *right;
                 let result = self.allocate_and_assign_float(value);
                 self.exe_stack.stack.push(result);
@@ -261,26 +273,26 @@ impl <'program> VM<'program> {
         let second = self.exe_stack.stack.pop().unwrap();
         let first = self.exe_stack.stack.pop().unwrap();
         match (first, second) {
-            (ObjRef::Int(left), ObjRef::Int(right)) => {
+            (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
                 let value = *left / *right;
                 println!("DIV RESULT: {} / {} = {}", *left, *right, value);
                 let result = self.allocate_and_assign_int(value);
                 self.exe_stack.stack.push(result);
             }
 
-            (ObjRef::Float(left), ObjRef::Float(right)) => {
+            (ObjRef::Float(_, left), ObjRef::Float(_, right)) => {
                 let value = *left / *right;
                 let result = self.allocate_and_assign_float(value);
                 self.exe_stack.stack.push(result);
             }
 
-            (ObjRef::Float(left), ObjRef::Int(right)) => {
+            (ObjRef::Float(_, left), ObjRef::Int(_, right)) => {
                 let value = *left / ((*right) as f64);
                 let result = self.allocate_and_assign_float(value);
                 self.exe_stack.stack.push(result);
             }
 
-            (ObjRef::Int(left), ObjRef::Float(right)) => {
+            (ObjRef::Int(_, left), ObjRef::Float(_, right)) => {
                 let value = ((*left) as f64) / *right;
                 let result = self.allocate_and_assign_float(value);
                 self.exe_stack.stack.push(result);
@@ -297,26 +309,26 @@ impl <'program> VM<'program> {
         let first = self.exe_stack.stack.pop().unwrap();
         let second = self.exe_stack.stack.pop().unwrap();
         match (first, second) {
-            (ObjRef::Int(left), ObjRef::Int(right)) => {
+            (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
                 let value = *left % *right;
                 println!("ADD RESULT: {}", value);
                 let result = self.allocate_and_assign_int(value);
                 self.exe_stack.stack.push(result);
             }
 
-            (ObjRef::Float(left), ObjRef::Float(right)) => {
+            (ObjRef::Float(_, left), ObjRef::Float(_, right)) => {
                 let value = *left % *right;
                 let result = self.allocate_and_assign_float(value);
                 self.exe_stack.stack.push(result);
             }
 
-            (ObjRef::Float(left), ObjRef::Int(right)) => {
+            (ObjRef::Float(_, left), ObjRef::Int(_, right)) => {
                 let value = *left % ((*right) as f64);
                 let result = self.allocate_and_assign_float(value);
                 self.exe_stack.stack.push(result);
             }
 
-            (ObjRef::Int(left), ObjRef::Float(right)) => {
+            (ObjRef::Int(_, left), ObjRef::Float(_, right)) => {
                 let value = ((*left) as f64) % *right;
                 let result = self.allocate_and_assign_float(value);
                 self.exe_stack.stack.push(result);
@@ -330,13 +342,17 @@ impl <'program> VM<'program> {
     #[inline]
     fn do_concat(&mut self) {
         println!("Concat");
-//        let first = self.exe_stack.stack.pop().unwrap();
-//        let second = self.exe_stack.stack.pop().unwrap();
-//        let concat_str = match (first, second) {
-//            (ObjRef::Str(left), ObjRef::Str(right)) => left + right,
-//            (ObjRef::Str(left), ObjRef::Int(right)) => left + right.to_string(),
-//            _ => exit(-1)
-//        };
+        let first = self.exe_stack.stack.pop().unwrap();
+        let second = self.exe_stack.stack.pop().unwrap();
+
+        match (&second, &first) {
+            (ObjRef::String(_, left), ObjRef::String(_, right)) => {
+                let concat = format!("{}{}", left, right);
+                let result = self.heap.allocate_str(concat.as_str());
+                self.exe_stack.stack.push(result);
+            }
+            _ => panic!("alkdjaklsdjakdsl")
+        }
     }
 
     fn read_string_or_exit(&self, ptr: u32) -> &'program str {
@@ -352,7 +368,7 @@ impl <'program> VM<'program> {
     fn allocate_and_assign_int(&mut self, value: i64) -> ObjRef<'program> {
         let mut obj = self.heap.allocate(AllocType::Int);
         match obj {
-            ObjRef::Int(ref mut i) => {
+            ObjRef::Int(_, ref mut i) => {
                 **i = value;
             }
             _ => unreachable!()
@@ -363,7 +379,7 @@ impl <'program> VM<'program> {
     fn allocate_and_assign_float(&mut self, value: f64) -> ObjRef<'program> {
         let mut obj = self.heap.allocate(AllocType::Float);
         match obj {
-            ObjRef::Float(ref mut i) => {
+            ObjRef::Float(_, ref mut i) => {
                 **i = value;
             }
             _ => unreachable!()
