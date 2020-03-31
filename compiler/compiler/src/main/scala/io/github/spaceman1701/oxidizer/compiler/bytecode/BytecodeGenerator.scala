@@ -24,12 +24,14 @@ class BytecodeGenerator {
   def generateFunctionBody(function: FunctionDef): Int = {
     val block = function.body
     val functionStart = bytecodeBuffer.size
+    println("function " + function.name + " starts at " + functionStart)
 
     newLocalCtx()
     function.params.foreach{p =>
       localVar(p)
     }
     generateCurrentCtx(block)
+    Ret >>: this
     popLocalCtx()
 
     functionStart

@@ -12,29 +12,32 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
   val functionByIndex: Map[Long, String] = functions.map{case (name, index) => (index, name)}
 
   def compile(): CompiledModule = {
-    var (bytecodePts, _) = bytecode.foldLeft((List[Int](), 0)){case ((sizes, totalSize), ins) =>
+    var (bytecodePts, _) = bytecode.foldLeft((List[Int](0), 0)){case ((sizes, totalSize), ins) =>
       val newTotal = totalSize + ins.size
       (newTotal :: sizes, newTotal)
     }
 
-    bytecodePts = bytecodePts.reverse
+    functions.foreach{case (name, _) => stringsBuffer.add(name)}
 
-    var (startPtr, stringSegment, _) = stringsBuffer.finalizeList().foldLeft((List[Int](), Array[Byte](), 0)){case ((offsets, segment, totalBytes), string) =>
+    bytecodePts = bytecodePts.reverse
+    println("bytecode starts at " + bytecodePts(0))
+
+    var (stringsOffsets, stringSegment, _) = stringsBuffer.finalizeList().foldLeft((List[Int](), Array[Byte](), 0)){case ((offsets, segment, totalBytes), string) =>
       val bytes = string.getBytes.concat(Array[Byte](0))
       val size = bytes.length //number of bytes for the string plus terminator
       (totalBytes :: offsets, segment.concat(bytes),totalBytes + size)
     }
 
-    startPtr = startPtr.reverse
+    stringsOffsets = stringsOffsets.reverse
 
-    println(startPtr)
+    println(stringsOffsets)
 
     val processedIns = bytecode.map {
       case Jump(target) => Jump(new U32(bytecodePts(target.value.toInt)))
       case IfFalse(target) => IfFalse(new U32(bytecodePts(target.value.toInt)))
       case LoadConstStr(ptr) => {
-        println("load str at ", startPtr(ptr.value.toInt))
-        LoadConstStr(new U32(startPtr(ptr.value.toInt)))
+        println("load str at ", stringsOffsets(ptr.value.toInt))
+        LoadConstStr(new U32(stringsOffsets(ptr.value.toInt)))
       }
       case NoOp => throw new IllegalStateException("NoOp was not processed out during initial pre-compile")
       case Break(loopContext) => throw new IllegalStateException("Break was not processed out during initial pre-compile")
@@ -42,7 +45,7 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
       case ins => ins
     }
 
-    val processedFunctions = functions.map{case (name, index) => (name -> bytecodePts(index.toInt))}
+    val processedFunctions = functions.map{case (name, index) => (name -> (bytecodePts(index.toInt)))}
 
     val bytes = processedIns.foldLeft(Array[Byte]()){case (array, ins) =>
       val insBytes = emitBytes(ins)
@@ -52,8 +55,10 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
     val headerFields = ListBuffer[HeaderField]()
 
     processedFunctions.foreach{case (name, ptr) =>
-        val header = FunctionField(stringsBuffer.add(name).toInt, ptr)
+        println("function header", name, ptr)
+        val header = FunctionField(stringsOffsets(stringsBuffer.add(name).toInt), ptr)
         headerFields.addOne(header)
+
     }
 
     classes.foreach{desc =>
@@ -85,6 +90,11 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
       }
     }
 
+    headerFields.foreach{f =>
+      val bytes = f.toBytes
+      val str = ByteBuffer.wrap(Array[Byte](bytes(1), bytes(2), bytes(3), bytes(4))).getInt
+      println("str", str)
+    }
     val headerBytes = headerFields.flatMap{field => field.toBytes}.toArray
 
     new CompiledModule(headerBytes, stringSegment, bytes)
@@ -93,7 +103,7 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
   private def emitBytes(ins: Instruction): Array[Byte] = {
     ins match {
       case Store(loc) =>
-        val param = loc.value.toByteArray
+        val param = loc.toByteArray
         Array(ins.opcode).concat(param)
       case LoadConstInt(value) =>
         val param = ByteBuffer.allocate(8)

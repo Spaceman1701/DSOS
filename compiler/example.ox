@@ -1,5 +1,10 @@
 def main() {
-    println(1 + 1);
-    println("wow, the heap works now!");
-    println(8 * 7 - 4);
+    println("foobar");
+    new_function(1);
+    println("nailed it");
+    exit();
+}
+
+def new_function(a) {
+    println(a);
 }

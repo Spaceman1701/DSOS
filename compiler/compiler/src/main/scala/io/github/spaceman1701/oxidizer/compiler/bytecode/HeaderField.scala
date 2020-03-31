@@ -1,6 +1,6 @@
 package io.github.spaceman1701.oxidizer.compiler.bytecode
 
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer, ByteOrder}
 
 sealed trait HeaderField {
   val fieldCode: Byte
@@ -13,6 +13,7 @@ case class FunctionField(funcNameIndex: Int, byteOffset: Int) extends HeaderFiel
 
   override def toBytes: Array[Byte] =
     ByteBuffer.allocate(9)
+      .order(ByteOrder.BIG_ENDIAN)
       .put(fieldCode)
       .putInt(funcNameIndex)
       .putInt(byteOffset)
@@ -24,6 +25,7 @@ case class ClassHeaderField(classNameIndex: Int, fieldNameIndex: Int, fieldValue
 
   override def toBytes: Array[Byte] =
     ByteBuffer.allocate(9)
+      .order(ByteOrder.BIG_ENDIAN)
       .put(fieldCode)
       .putInt(classNameIndex)
       .putInt(fieldNameIndex)
