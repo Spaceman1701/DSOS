@@ -3,27 +3,55 @@ use crate::object::ObjRef;
 
 pub struct CallStack<'heap> {
     stack: Vec<StackFrame<'heap>>,
+    exe_stack: Vec<ExecutionStack<'heap>>,
+    ip_stack: Vec<usize>
 }
 
 pub struct StackFrame<'heap> {
     locals: Vec<ObjRef<'heap>>
 }
 
+pub struct ExecutionStack<'heap> {
+    stack: Vec<ObjRef<'heap>>
+}
+
 impl <'heap> CallStack <'heap> {
     pub fn new() -> CallStack<'heap> {
         CallStack {
-            stack: vec![StackFrame::new()]
+            stack: vec![StackFrame::new()],
+            exe_stack: vec![ExecutionStack::new()],
+            ip_stack: vec![0]
         }
     }
 
-    pub fn push_new(&mut self) {
-        self.stack.push(StackFrame::new())
+    pub fn push_new(&mut self, new_ip: usize) {
+        self.stack.push(StackFrame::new());
+        self.exe_stack.push(ExecutionStack::new());
+        self.ip_stack.push(new_ip);
     }
 
-    pub fn peek(&mut self) -> & mut StackFrame<'heap> {
-        match self.stack.first_mut() {
+    pub fn pop(&mut self) {
+        self.stack.pop();
+        self.exe_stack.pop();
+        self.ip_stack.pop();
+    }
+
+    #[inline]
+    pub fn ip(&mut self) -> &mut usize {
+        self.ip_stack.last_mut().unwrap()
+    }
+
+    pub fn active_frame(&mut self) -> & mut StackFrame<'heap> {
+        match self.stack.last_mut() {
             None => unreachable!(),
             Some(value) => value,
+        }
+    }
+
+    pub fn active_exe(&mut self) -> &mut ExecutionStack<'heap> {
+        match self.exe_stack.last_mut() {
+            None => unreachable!(),
+            Some(value) => value
         }
     }
 }
@@ -57,3 +85,22 @@ impl <'heap> StackFrame<'heap> {
     }
 }
 
+impl <'heap> ExecutionStack<'heap> {
+    pub fn new() -> ExecutionStack<'heap> {
+        ExecutionStack {
+            stack: vec![]
+        }
+    }
+
+    pub fn pop_optional(&mut self) -> Option<ObjRef<'heap>> {
+        self.stack.pop()
+    }
+
+    pub fn pop(&mut self) -> ObjRef<'heap> {
+        self.pop_optional().unwrap()
+    }
+
+    pub fn push(&mut self, obj: ObjRef<'heap>) {
+        self.stack.push(obj)
+    }
+}

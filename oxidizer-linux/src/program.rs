@@ -2,16 +2,23 @@ use std::str;
 use std::str::Utf8Error;
 
 use crate::instruction::Instruction;
+use std::collections::HashMap;
+use core::borrow::Borrow;
 
 pub struct Program {
     buffer: Vec<u8>,
-    pub segments: SegmentMap
+    pub segments: SegmentMap,
+    headers: HeaderData
 }
 
 pub struct SegmentMap {
     pub headers: usize,
     pub strings: usize,
     pub text: usize
+}
+
+pub struct HeaderData {
+    functions: HashMap<String, usize>,
 }
 
 impl Program {
@@ -38,9 +45,49 @@ impl Program {
 
         let segments = Program::read_segment_offsets(&buffer[3..]);
 
-        Program {
+        let mut prog = Program {
             buffer,
-            segments
+            segments,
+            headers: HeaderData {
+                functions: HashMap::new()
+            }
+        };
+
+        prog.load_headers();
+        prog
+    }
+
+    fn load_headers(&mut self) {
+        let mut index: usize = self.segments.headers;
+
+        while index < self.segments.strings {
+            match self.buffer[index] {
+                0x1 => {
+                    let str_index = Program::bytes_to_u32(&self.buffer[index + 1 .. index + 5]);
+                    println!("{}", str_index);
+                    let instruction = Program::bytes_to_u32(&self.buffer[index + 5.. index + 9]);
+
+                    let string = self.read_str(str_index).unwrap_or_else(|e| panic!());
+
+                    println!("function found: {}", string);
+
+                    let owned_string = String::from(string);
+
+                    self.headers.functions.insert(owned_string, instruction as usize);
+
+                    index += 9;
+                }
+
+                0x2 => {
+                    println!("class field found");
+                    index += 9
+                }
+
+                _ => {
+                    println!("invalid header");
+                    panic!()
+                }
+            }
         }
     }
 
@@ -67,5 +114,10 @@ impl Program {
     pub fn is_done(&self, ptr: usize) -> bool {
         self.segments.text + ptr >= self.buffer.len()
     }
+
+    pub fn lookup_function(&self, name: &str) -> Option<&usize> {
+        self.headers.functions.get(name)
+    }
 }
+
 
