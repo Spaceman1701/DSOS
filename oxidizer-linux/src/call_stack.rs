@@ -1,4 +1,5 @@
 use crate::object::ObjRef;
+use std::process::exit;
 
 
 pub struct CallStack<'heap> {
@@ -30,10 +31,11 @@ impl <'heap> CallStack <'heap> {
         self.ip_stack.push(new_ip);
     }
 
-    pub fn pop(&mut self) {
+    pub fn pop(&mut self) -> bool {
         self.stack.pop();
         self.exe_stack.pop();
         self.ip_stack.pop();
+        return self.stack.len() != 0;
     }
 
     #[inline]
@@ -102,5 +104,9 @@ impl <'heap> ExecutionStack<'heap> {
 
     pub fn push(&mut self, obj: ObjRef<'heap>) {
         self.stack.push(obj)
+    }
+
+    pub fn peek(&mut self) -> &mut ObjRef<'heap> {
+        self.stack.last_mut().unwrap()
     }
 }

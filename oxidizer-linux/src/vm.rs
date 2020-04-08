@@ -6,6 +6,97 @@ use crate::memory::{Heap, AllocType};
 use crate::object::{ObjRef};
 use crate::call_stack::{CallStack, StackFrame};
 
+
+macro_rules! numeric_binop {
+    ($operator: tt, $vm: expr) => {
+        {
+        let second = $vm.call_stack.active_exe().pop();
+        let first = $vm.call_stack.active_exe().pop();
+        match (first, second) {
+            (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
+                let value = *left $operator *right;
+                let result = $vm.allocate_and_assign_int(value);
+                $vm.call_stack.active_exe().push(result);
+            }
+
+            (ObjRef::Float(_, left), ObjRef::Float(_, right)) => {
+                let value = *left $operator *right;
+                let result = $vm.allocate_and_assign_float(value);
+                $vm.call_stack.active_exe().push(result);
+            }
+
+            (ObjRef::Float(_, left), ObjRef::Int(_, right)) => {
+                let value = *left $operator ((*right) as f64);
+                let result = $vm.allocate_and_assign_float(value);
+                $vm.call_stack.active_exe().push(result);
+            }
+
+            (ObjRef::Int(_, left), ObjRef::Float(_, right)) => {
+                let value = ((*left) as f64) $operator *right;
+                let result = $vm.allocate_and_assign_float(value);
+                $vm.call_stack.active_exe().push(result);
+            }
+
+            _ => exit(-1)
+        }
+        }
+    }
+}
+
+macro_rules! comparison {
+    ($operator: tt, $vm: expr) => {
+    {
+        let second = $vm.call_stack.active_exe().pop();
+        let first = $vm.call_stack.active_exe().pop();
+        match (first, second) {
+            (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
+                let value = if *left $operator *right {1} else {0};
+                let result = $vm.allocate_and_assign_int(value);
+                $vm.call_stack.active_exe().push(result);
+            }
+
+            (ObjRef::Float(_, left), ObjRef::Float(_, right)) => {
+                let value = if *left $operator *right {1} else {0};
+                let result = $vm.allocate_and_assign_int(value);
+                $vm.call_stack.active_exe().push(result);
+            }
+
+            (ObjRef::Float(_, left), ObjRef::Int(_, right)) => {
+                let value = if *left $operator ((*right) as f64) {1} else {0};
+                let result = $vm.allocate_and_assign_int(value);
+                $vm.call_stack.active_exe().push(result);
+            }
+
+            (ObjRef::Int(_, left), ObjRef::Float(_, right)) => {
+                let value = if ((*left) as f64) $operator *right {1} else {0};
+                let result = $vm.allocate_and_assign_int(value);
+                $vm.call_stack.active_exe().push(result);
+            }
+
+            _ => exit(-1)
+        }
+    }
+    }
+}
+
+macro_rules! int_only_binop {
+    ($operator: tt, $vm: expr) => {
+        {
+        let second = $vm.call_stack.active_exe().pop();
+        let first = $vm.call_stack.active_exe().pop();
+        match (first, second) {
+            (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
+                let value = *left $operator *right;
+                let result = $vm.allocate_and_assign_int(value);
+                $vm.call_stack.active_exe().push(result);
+            }
+            _ => exit(-1)
+        }
+        }
+    }
+}
+
+
 pub struct VM<'a> {
     program: &'a program::Program,
     heap: Heap<'a>,
@@ -80,18 +171,18 @@ impl <'program> VM<'program> {
             },
             Instruction::CreateObject => {},
             Instruction::SliceList => {},
-            Instruction::Add => self.do_add(),
-            Instruction::Sub => self.do_sub(),
-            Instruction::Mul => self.do_mul(),
-            Instruction::Div => self.do_div(),
-            Instruction::Mod => self.do_mod(),
+            Instruction::Add => {numeric_binop!(+, self)},
+            Instruction::Sub => {numeric_binop!(-, self)},
+            Instruction::Mul => {numeric_binop!(*, self)},
+            Instruction::Div => {numeric_binop!(/, self)},
+            Instruction::Mod => {numeric_binop!(%, self)},
             Instruction::Concat => self.do_concat(),
             Instruction::Pow => {},
-            Instruction::LAnd => {},
-            Instruction::LOr => {},
-            Instruction::CompG => {},
-            Instruction::CompL => {},
-            Instruction::CompEq => {},
+            Instruction::LAnd => {int_only_binop!(&, self)},
+            Instruction::LOr => {int_only_binop!(|, self)},
+            Instruction::CompG => {comparison!(>, self)},
+            Instruction::CompL => {comparison!(<, self)},
+            Instruction::CompEq => {comparison!(==, self)},
             Instruction::LoadMember => {},
             Instruction::StoreMember => {},
             Instruction::Call => {
@@ -152,10 +243,14 @@ impl <'program> VM<'program> {
                 control_change = true;
                 match self.call_stack.active_exe().pop_optional() {
                     None => {
-                        self.call_stack.pop();
+                        if !self.call_stack.pop() {
+                            exit(0)
+                        }
                     }
                     Some(value) => {
-                        self.call_stack.pop();
+                        if !self.call_stack.pop() {
+                            exit(0);
+                        }
                         self.call_stack.active_exe().push(value);
                     }
                 }
@@ -168,202 +263,25 @@ impl <'program> VM<'program> {
             Instruction::WriteChannel => {},
             Instruction::ReadChannel => {},
             Instruction::Not => {},
-            Instruction::XOr => {},
-            Instruction::BAnd => {},
-            Instruction::BOr => {},
-            Instruction::LeftShift => {},
-            Instruction::RightShift => {},
-            Instruction::URightShift => {},
-            Instruction::Modulo => {},
+            Instruction::XOr => {int_only_binop!(^, self)},
+            Instruction::BAnd => {int_only_binop!(&, self)},
+            Instruction::BOr => {int_only_binop!(|, self)},
+            Instruction::LeftShift => {int_only_binop!(<<, self)},
+            Instruction::RightShift => {int_only_binop!(>>, self)},
+            Instruction::URightShift => {int_only_binop!(<<, self)},
+            Instruction::Modulo => {panic!("unsupported operation")},
             Instruction::BCompliment => {},
-            Instruction::Dup => {},
-            Instruction::Consume => {},
+            Instruction::Dup => {
+                let tos = self.call_stack.active_exe().peek().clone();
+                self.call_stack.active_exe().push(tos);
+            },
+            Instruction::Consume => {
+                self.call_stack.active_exe().pop_optional();
+            },
         }
 
         if !control_change {
             (*self.ip()) += skip;
-        }
-    }
-
-
-
-    #[inline]
-    fn do_add(&mut self) {
-        println!("debug: ADD");
-        let second = self.call_stack.active_exe().pop();
-        let first = self.call_stack.active_exe().pop();
-        match (first, second) {
-            (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
-                let value = *left + *right;
-                println!("ADD RESULT: {}", value);
-                let result = self.allocate_and_assign_int(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            (ObjRef::Float(_, left), ObjRef::Float(_, right)) => {
-                let value = *left + *right;
-                let result = self.allocate_and_assign_float(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            (ObjRef::Float(_, left), ObjRef::Int(_, right)) => {
-                let value = *left + ((*right) as f64);
-                let result = self.allocate_and_assign_float(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            (ObjRef::Int(_, left), ObjRef::Float(_, right)) => {
-                let value = ((*left) as f64) + *right;
-                let result = self.allocate_and_assign_float(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            _ => exit(-1)
-
-        }
-    }
-
-    #[inline]
-    fn do_sub(&mut self) {
-        println!("sub");
-        let second = self.call_stack.active_exe().pop();
-        let first = self.call_stack.active_exe().pop();
-        match (first, second) {
-            (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
-                let value = *left - *right;
-                println!("ADD RESULT: {}", value);
-                let result = self.allocate_and_assign_int(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            (ObjRef::Float(_, left), ObjRef::Float(_, right)) => {
-                let value = *left - *right;
-                let result = self.allocate_and_assign_float(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            (ObjRef::Float(_, left), ObjRef::Int(_, right)) => {
-                let value = *left - ((*right) as f64);
-                let result = self.allocate_and_assign_float(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            (ObjRef::Int(_, left), ObjRef::Float(_, right)) => {
-                let value = ((*left) as f64) - *right;
-                let result = self.allocate_and_assign_float(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            _ => exit(-1)
-
-        }
-    }
-
-    #[inline]
-    fn do_mul(&mut self) {
-        println!("mul");
-        let second = self.call_stack.active_exe().pop();
-        let first = self.call_stack.active_exe().pop();
-        match (first, second) {
-            (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
-                let value = *left * *right;
-                println!("ADD RESULT: {}", value);
-                let result = self.allocate_and_assign_int(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            (ObjRef::Float(_, left), ObjRef::Float(_, right)) => {
-                let value = *left * *right;
-                let result = self.allocate_and_assign_float(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            (ObjRef::Float(_, left), ObjRef::Int(_, right)) => {
-                let value = *left * ((*right) as f64);
-                let result = self.allocate_and_assign_float(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            (ObjRef::Int(_, left), ObjRef::Float(_, right)) => {
-                let value = ((*left) as f64) * *right;
-                let result = self.allocate_and_assign_float(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            _ => exit(-1)
-
-        }
-    }
-
-    #[inline]
-    fn do_div(&mut self) {
-        println!("div");
-        let second = self.call_stack.active_exe().pop();
-        let first = self.call_stack.active_exe().pop();
-        match (first, second) {
-            (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
-                let value = *left / *right;
-                println!("DIV RESULT: {} / {} = {}", *left, *right, value);
-                let result = self.allocate_and_assign_int(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            (ObjRef::Float(_, left), ObjRef::Float(_, right)) => {
-                let value = *left / *right;
-                let result = self.allocate_and_assign_float(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            (ObjRef::Float(_, left), ObjRef::Int(_, right)) => {
-                let value = *left / ((*right) as f64);
-                let result = self.allocate_and_assign_float(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            (ObjRef::Int(_, left), ObjRef::Float(_, right)) => {
-                let value = ((*left) as f64) / *right;
-                let result = self.allocate_and_assign_float(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            _ => exit(-1)
-
-        }
-    }
-
-    #[inline]
-    fn do_mod(&mut self) {
-        println!("mod");
-        let first =  self.call_stack.active_exe().pop();
-        let second = self.call_stack.active_exe().pop();
-        match (first, second) {
-            (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
-                let value = *left % *right;
-                println!("ADD RESULT: {}", value);
-                let result = self.allocate_and_assign_int(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            (ObjRef::Float(_, left), ObjRef::Float(_, right)) => {
-                let value = *left % *right;
-                let result = self.allocate_and_assign_float(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            (ObjRef::Float(_, left), ObjRef::Int(_, right)) => {
-                let value = *left % ((*right) as f64);
-                let result = self.allocate_and_assign_float(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            (ObjRef::Int(_, left), ObjRef::Float(_, right)) => {
-                let value = ((*left) as f64) % *right;
-                let result = self.allocate_and_assign_float(value);
-                self.call_stack.active_exe().push(result);
-            }
-
-            _ => exit(-1)
-
         }
     }
 
@@ -436,3 +354,6 @@ impl <'program> VM<'program> {
         obj
     }
 }
+
+
+
