@@ -5,6 +5,7 @@ use std::process::exit;
 use program::Program;
 use vm::VM;
 
+#[macro_use] mod debug_macros;
 mod program;
 mod instruction;
 mod vm;

@@ -75,7 +75,7 @@ impl <'heap> Heap<'heap> {
     pub fn allocate_str(&mut self, value: &str) -> ObjRef<'heap> {
         let amount = value.len() + size_of::<AllocHeader>();
         if !self.allocator.is_space_available(&self.memory, amount) {
-            self.compactify_memory();
+            //self.compactify_memory();
 
             if !self.allocator.is_space_available(&self.memory, amount) {
                 self.expand_memory();
@@ -121,7 +121,7 @@ impl <'heap> Heap<'heap> {
         };
 
         if !self.allocator.is_space_available(&self.memory, amount) {
-            self.compactify_memory();
+            //self.compactify_memory();
 
             if !self.allocator.is_space_available(&self.memory, amount) {
                 self.expand_memory();
@@ -222,13 +222,14 @@ impl <'heap> Heap<'heap> {
     fn expand_memory(&mut self) {
         let current_len = self.memory.len();
         self.memory.resize_with(current_len * 2, || 0);
+        vm_debug!("memory size doubled to {}", self.memory.len());
     }
 }
 
 impl OxAllocator {
 
     fn is_space_available(&self, memory: &Vec<u8>, amount: usize) -> bool {
-        self.top + amount >= memory.len()
+        self.top + amount < memory.len()
     }
 
     fn allocate(&mut self, amount: usize) -> AllocLayout {

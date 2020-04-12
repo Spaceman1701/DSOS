@@ -64,12 +64,10 @@ impl Program {
             match self.buffer[index] {
                 0x1 => {
                     let str_index = Program::bytes_to_u32(&self.buffer[index + 1 .. index + 5]);
-                    println!("{}", str_index);
                     let instruction = Program::bytes_to_u32(&self.buffer[index + 5.. index + 9]);
 
                     let string = self.read_str(str_index).unwrap_or_else(|e| panic!());
 
-                    println!("function found: {}", string);
 
                     let owned_string = String::from(string);
 

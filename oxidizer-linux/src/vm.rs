@@ -5,6 +5,7 @@ use crate::memory;
 use crate::memory::{Heap, AllocType};
 use crate::object::{ObjRef};
 use crate::call_stack::{CallStack, StackFrame};
+#[macro_use] use crate::debug_macros;
 
 
 macro_rules! numeric_binop {
@@ -46,10 +47,13 @@ macro_rules! numeric_binop {
 macro_rules! comparison {
     ($operator: tt, $vm: expr) => {
     {
+        vm_debug!("comparison");
         let second = $vm.call_stack.active_exe().pop();
         let first = $vm.call_stack.active_exe().pop();
+        vm_debug!("loaded two refs off the stack");
         match (first, second) {
             (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
+                vm_debug!("{} comp {}", left, right);
                 let value = if *left $operator *right {1} else {0};
                 let result = $vm.allocate_and_assign_int(value);
                 $vm.call_stack.active_exe().push(result);
@@ -97,6 +101,7 @@ macro_rules! int_only_binop {
 }
 
 
+
 pub struct VM<'a> {
     program: &'a program::Program,
     heap: Heap<'a>,
@@ -128,12 +133,12 @@ impl <'program> VM<'program> {
 
         (*self.ip()) = main_ip;
 
-        println!("main function is at {}", self.ip());
+        vm_debug!("main function is at {}", self.ip());
 
         while !self.program.is_done(*self.ip()) {
             match self.program.get_ins(*self.ip()) {
                 None => {
-                    eprintln!("instruction decode error at {}", self.ip());
+                    panic!("instruction decode error at {}", self.ip());
                 },
                 Some((ins, skip)) => {
                     self.perform_action(ins, skip);
@@ -146,13 +151,13 @@ impl <'program> VM<'program> {
         let mut control_change = false;
         match ins {
             Instruction::Store(ptr) => {
-                println!("Store {}", ptr);
+                vm_debug!("Store {}", ptr);
                 let obj = self.call_stack.active_exe().pop();
                 let frame = self.call_stack.active_frame();
                 frame.store(&obj, ptr);
             },
             Instruction::LoadConstInt(value) => {
-                println!("load const int {}", value);
+                vm_debug!("LoadConstInt({})", value);
                 let obj = self.allocate_and_assign_int(value);
                 self.call_stack.active_exe().push(obj);
             },
@@ -166,6 +171,7 @@ impl <'program> VM<'program> {
                 self.call_stack.active_exe().push(obj);
             },
             Instruction::LoadVar(ptr) => {
+                vm_debug!("LoadVar({})", ptr);
                 let obj = self.call_stack.active_frame().get(ptr).unwrap();
                 self.call_stack.active_exe().push(obj);
             },
@@ -186,7 +192,7 @@ impl <'program> VM<'program> {
             Instruction::LoadMember => {},
             Instruction::StoreMember => {},
             Instruction::Call => {
-                println!("debug CALL");
+                vm_debug!("debug CALL");
                 let function_name = self.call_stack.active_exe().pop();
                 let param_count = self.call_stack.active_exe().pop();
 
@@ -224,12 +230,13 @@ impl <'program> VM<'program> {
 
             },
             Instruction::Jump(ptr) => {
-                println!("Jump {}", ptr);
+                vm_debug!("Jump {}", ptr);
                 (*self.ip()) = ptr as usize;
                 control_change = true;
             },
             Instruction::IfFalse(ptr) => {
-                println!("IfFalse {}", ptr);
+                vm_debug!("IfFalse at ip {}", *self.ip());
+                vm_debug!("IfFalse {}", ptr);
                 let cond = self.call_stack.active_exe().pop();
                 match cond {
                     ObjRef::Int(_, 0) => {
@@ -287,7 +294,7 @@ impl <'program> VM<'program> {
 
     #[inline]
     fn do_concat(&mut self) {
-        println!("Concat");
+        vm_debug!("Concat");
         let first = self.call_stack.active_exe().pop();
         let second = self.call_stack.active_exe().pop();
 
@@ -326,8 +333,7 @@ impl <'program> VM<'program> {
         return match self.program.read_str(ptr) {
             Ok(the_str) => the_str,
             Err(_) => {
-                eprintln!("error reading string at {}", ptr);
-                exit(-1)
+                panic!("error reading string at {}", ptr);
             },
         }
     }
