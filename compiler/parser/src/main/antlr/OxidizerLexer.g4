@@ -29,6 +29,7 @@ KW_THROW: 'throw';
 KW_CATCH: 'catch';
 KW_TRY: 'try';
 KW_FINALLY: 'finally';
+KW_NEW: 'new';
 
 
 OP_LSHIFT: '<<';

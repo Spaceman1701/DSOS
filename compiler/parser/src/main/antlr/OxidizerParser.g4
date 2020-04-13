@@ -64,6 +64,7 @@ expr
     | literall # Lit
     | expr LSQUARE (start=expr)? (COLON)? (end=expr)? (COLON)? (step=expr)? RSQUARE # ArrayIndex
     | ident LPAREN (expr (COMMA expr)*)? RPAREN # FunCall
+    | KW_NEW ident LPAREN (expr (COMMA expr)*)? RPAREN #ObjConstructor
     | LPAREN expr RPAREN # Parens
     | comprehension # ListComp
     | expr OP_INC # Inc

@@ -1,8 +1,14 @@
-def main() {
-    i = 0;
-    println("starting loop with ${i}");
-    while i < 10 {
-        println(i);
-        i = i + 1;
+class Foobar {
+    def constructor(name) {
+        println(name);
     }
+
+    def anotherMethod() {
+        println("wow, you called another method!");
+    }
+}
+
+def main() {
+    f = new Foobar("this is a class method!");
+    f.anotherMethod();
 }

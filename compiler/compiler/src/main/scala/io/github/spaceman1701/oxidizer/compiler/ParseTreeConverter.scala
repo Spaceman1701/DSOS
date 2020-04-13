@@ -327,6 +327,12 @@ class ParseTreeConverter extends OxidizerParserBaseVisitor[AST] {
     FunctionDef(isPrivate, name, params, body)
   }
 
+  override def visitObjConstructor(ctx: OxidizerParser.ObjConstructorContext): ObjConstructor = {
+    val name = ctx.ident().getText;
+    val params = ctx.expr().asScala.toList.map(visitExpr)
+    ObjConstructor(name, params)
+  }
+
   override def visitImportdecl(ctx: OxidizerParser.ImportdeclContext): ImportDecl = {
     println("visiting import decl")
     ImportDecl(ctx.NAME().getText)

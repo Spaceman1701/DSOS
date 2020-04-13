@@ -53,6 +53,7 @@ case class Var(ident: String) extends Expr
 case class ArrayIndex(arrayExpr: Expr, start: Option[Expr], end: Option[Expr], step: Option[Expr]) extends Expr
 case class Lit(literal: Literal) extends Expr
 case class FunCall(ident: String, params: List[Expr]) extends Expr
+case class ObjConstructor(ident: String, params: List[Expr]) extends Expr
 case class Parens(expr: Expr) extends Expr
 case class ListComp(comp: Comprehension) extends Expr
 case class Unop(expr: Expr, Op: UnaryOperator) extends Expr

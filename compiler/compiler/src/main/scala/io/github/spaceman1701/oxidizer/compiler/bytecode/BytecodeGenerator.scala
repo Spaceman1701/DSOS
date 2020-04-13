@@ -1,7 +1,7 @@
 package io.github.spaceman1701.oxidizer.compiler.bytecode
 
 import io.github.spaceman1701.oxidizer.compiler.ast
-import io.github.spaceman1701.oxidizer.compiler.ast.{AST, ArrayIndex, AssignStmt, BinaryOperator, Binop, BitwiseAnd, BitwiseOr, BranchStmt, BreakStmt, CompareEq, CompareGE, CompareGT, CompareLE, CompareLT, CompareNE, Compliment, ContinueStmt, Decrement, DestructerAssignStmt, Divide, Elif, EmbeddedExpr, Expr, ExprStmt, FloatLit, ForLoop, FunCall, FunctionDef, IfBranch, Increment, IntLit, ListComp, ListenExpr, Lit, Literal, LogicalAnd, LogicalOr, LoopStmt, Minus, Multiply, Negate, Parens, Plus, Power, ReturnStmt, SendExpr, SpawnStmt, Stmt, StringLit, SwitchBranch, Ternary, TextPart, UnaryOperator, Unop, UnsignedRightShift, Var, WhileLoop}
+import io.github.spaceman1701.oxidizer.compiler.ast.{AST, ArrayIndex, AssignStmt, BinaryOperator, Binop, BitwiseAnd, BitwiseOr, BranchStmt, BreakStmt, CompareEq, CompareGE, CompareGT, CompareLE, CompareLT, CompareNE, Compliment, ContinueStmt, Decrement, DestructerAssignStmt, Divide, Elif, EmbeddedExpr, Expr, ExprStmt, FloatLit, ForLoop, FunCall, FunctionDef, IfBranch, Increment, IntLit, ListComp, ListenExpr, Lit, Literal, LogicalAnd, LogicalOr, LoopStmt, Minus, Multiply, Negate, ObjConstructor, Parens, Plus, Power, ReturnStmt, SendExpr, SpawnStmt, Stmt, StringLit, SwitchBranch, Ternary, TextPart, UnaryOperator, Unop, UnsignedRightShift, Var, WhileLoop}
 import io.github.spaceman1701.oxidizer.compiler.util._
 
 import scala.collection.mutable
@@ -190,6 +190,7 @@ class BytecodeGenerator {
       case ArrayIndex(arrayExpr, start, end, step) => ???
       case Lit(literal) => convertLiteral(literal)
       case FunCall(ident, params) => emitFunctionCall(ident, params)
+      case ObjConstructor(ident, params) => emitConstructor(ident, params)
       case Parens(expr) => emitExpr(expr)
       case ListComp(comp) => ???
       case Unop(expr, op) => emitUnOp(expr, op)
@@ -200,6 +201,18 @@ class BytecodeGenerator {
       case ListenExpr(expr) => ???
     }
   }
+
+  def emitConstructor(ident: String, params: List[Expr]): Unit = {
+    val objName = stringConstants.add(ident)
+    LoadConstStr(new U32(objName)) >>: this
+    CreateObject >>: this
+    val ctrStr = mangleName(ident, "constructor")
+    emitFunctionCall(ctrStr, params)
+
+
+  }
+
+  private def mangleName(className: String, memberName: String) = className + "__" + memberName
 
   def emitUnOp(expr: Expr, op: UnaryOperator): Unit = {
     op match {
@@ -299,6 +312,8 @@ class BytecodeGenerator {
     val pieces = ident.split("\\.")
     LoadVar(new U16(localVar(pieces(0)))) >>: this//base of name must be a local variable objref
     for (piece <- pieces.slice(1, pieces.size)) {
+      stringConstants.add(piece)
+      LoadConstStr(new U32(stringConstants.add(piece))) >>: this
       LoadMember >>: this //each member piece is a new objref on the stack
     }
     //result is one objref added to the stack

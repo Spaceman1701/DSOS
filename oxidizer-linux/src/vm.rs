@@ -6,6 +6,7 @@ use crate::memory::{Heap, AllocType};
 use crate::object::{ObjRef};
 use crate::call_stack::{CallStack};
 #[macro_use] use crate::debug_macros;
+use crate::program::FieldData;
 
 
 macro_rules! numeric_binop {
@@ -176,13 +177,28 @@ impl <'program> VM<'program> {
                 self.call_stack.active_exe().push(obj);
             },
             Instruction::CreateObject => {
+                let obj_name = self.call_stack.active_exe().pop();
                 let mut obj = self.heap.allocate(AllocType::Object);
-                match obj {
-                    ObjRef::Object(_, ref mut object) => {
-                        object.fields.insert("foo", ObjRef::String(None, "foobar"));
+
+                match (obj_name, &mut obj) {
+                    (ObjRef::String(_, ref the_name), ObjRef::Object(_, ref mut the_obj)) => {
+                        let class_template = self.program.lookup_class_template(the_name).unwrap_or_else(|| panic!("class '{}' does not exist", the_name));
+                        for (field_name, field_value) in class_template.predefined_fields.iter() {
+                            let field_ref = match field_value {
+                                FieldData::String(value) => {
+                                    self.heap.allocate_str(&value)
+                                },
+                                FieldData::Int(value) => self.allocate_and_assign_int(*value),
+                                FieldData::Float(value) => self.allocate_and_assign_float(*value),
+                            };
+
+                            the_obj.fields.insert(field_name, field_ref);
+                        }
                     },
-                    _ => unreachable!()
-                }
+                    _ => panic!("object instantiation error")
+                };
+
+                self.call_stack.active_exe().push(obj);
             },
             Instruction::SliceList => {},
             Instruction::Add => {numeric_binop!(+, self)},
@@ -198,15 +214,15 @@ impl <'program> VM<'program> {
             Instruction::CompL => {comparison!(<, self)},
             Instruction::CompEq => {comparison!(==, self)},
             Instruction::LoadMember => {
-                let mut obj = self.call_stack.active_exe().pop();
                 let mut field_name = self.call_stack.active_exe().pop();
+                let mut obj = self.call_stack.active_exe().pop();
 
                 match (obj, field_name) {
                     (ObjRef::Object(_, ref mut the_object), ObjRef::String(_, ref the_str)) => {
                         println!("loading member {}", the_str);
 
                         match the_object.fields.get(the_str) {
-                            None => panic!("error loading member: member does not exist"),
+                            None => panic!("error loading member: member does not exist ('{}')", the_str),
                             Some(ref mut member) => {
                                 let cloned_member = member.clone();
                                 self.call_stack.active_exe().push(cloned_member);
@@ -296,7 +312,18 @@ impl <'program> VM<'program> {
             Instruction::Spawn => {},
             Instruction::WriteChannel => {},
             Instruction::ReadChannel => {},
-            Instruction::Not => {},
+            Instruction::Not => {
+                let obj = self.call_stack.active_exe().pop();
+                match obj {
+                    ObjRef::Int(_, ref v) => {
+                        let result = self.allocate_and_assign_int(!(**v));
+                        self.call_stack.active_exe().push(result);
+                    },
+                    ObjRef::Float(_, _) => panic!("type error: expected int but found float"),
+                    ObjRef::String(_, _) => panic!("type error: expected int but found string"),
+                    ObjRef::Object(_, _) => panic!("type error: expected int but found object"),
+                }
+            },
             Instruction::XOr => {int_only_binop!(^, self)},
             Instruction::BAnd => {int_only_binop!(&, self)},
             Instruction::BOr => {int_only_binop!(|, self)},

@@ -18,6 +18,17 @@ pub struct SegmentMap {
 
 pub struct HeaderData {
     functions: HashMap<String, usize>,
+    classes: HashMap<String, ClassTemplate>
+}
+
+pub enum FieldData {
+    String(String),
+    Int(i64),
+    Float(f64)
+}
+
+pub struct ClassTemplate {
+    pub predefined_fields: HashMap<String, FieldData>
 }
 
 impl Program {
@@ -40,6 +51,17 @@ impl Program {
         (bytes[3] as u32) << 0
     }
 
+    fn bytes_to_u64(bytes: &[u8]) -> u64 {
+        ((bytes[0] as u64) << 56) |
+            ((bytes[1] as u64) << 48) |
+            ((bytes[2] as u64) << 40)  |
+            ((bytes[3] as u64) << 32)  |
+            ((bytes[4] as u64) << 24) |
+            ((bytes[5] as u64) << 16) |
+            ((bytes[6] as u64) << 8)  |
+            (bytes[7] as u64) << 0
+    }
+
     pub fn new(buffer: Vec<u8>) -> Program {
 
         let segments = Program::read_segment_offsets(&buffer[3..]);
@@ -48,7 +70,8 @@ impl Program {
             buffer,
             segments,
             headers: HeaderData {
-                functions: HashMap::new()
+                functions: HashMap::new(),
+                classes: HashMap::new()
             }
         };
 
@@ -76,8 +99,39 @@ impl Program {
                 }
 
                 0x2 => {
-                    println!("class field found");
-                    index += 9
+                    let field_type = &self.buffer[index + 1];
+                    let class_name = String::from(self.read_str(Program::bytes_to_u32(&self.buffer[index + 2 .. index + 6])).unwrap_or_else(|_e| panic!()));
+                    let field_name = String::from(self.read_str(Program::bytes_to_u32(&self.buffer[index + 6.. index + 10])).unwrap_or_else(|_e| panic!()));
+                    let field_value = Program::bytes_to_u64(&self.buffer[index + 10 .. index + 18]);
+                    println!("found field for class '{}': '{}' with value {} (type will be {})", class_name, field_name, field_value, field_type);
+
+                    if !self.headers.classes.contains_key(&class_name) {
+                        let class_template = ClassTemplate {
+                            predefined_fields: HashMap::new(),
+                        };
+                        self.headers.classes.insert(class_name.clone(), class_template);
+                    }
+
+                    match field_type {
+                        0 => {
+                            let mut class_template = self.headers.classes.get_mut(&class_name).unwrap();
+                            class_template.predefined_fields.insert(field_name, FieldData::Int(field_value as i64));
+                        },
+                        1 => {
+                            let mut class_template = self.headers.classes.get_mut(&class_name).unwrap();
+                            class_template.predefined_fields.insert(field_name, FieldData::Float(field_value as f64));
+                        },
+                        2 => {
+                            let owned_field = self.read_owned_str(field_value as u32);
+                            println!("type 2 field value is {}", owned_field);
+                            let mut class_template = self.headers.classes.get_mut(&class_name).unwrap();
+                            class_template.predefined_fields.insert(field_name, FieldData::String(owned_field));
+                        },
+                        _ => panic!("illegal field type code: {}", field_type)
+                    };
+
+
+                    index += 18;
                 }
 
                 _ => {
@@ -86,6 +140,11 @@ impl Program {
                 }
             }
         }
+    }
+
+    fn read_owned_str(&self, offset: u32) -> String {
+        let borrowed_str = self.read_str(offset as u32).unwrap_or_else(|_e| panic!());
+        String::from(borrowed_str)
     }
 
     pub fn read_str(&self, offset: u32) -> Result<&str, Utf8Error> {
@@ -115,6 +174,8 @@ impl Program {
     pub fn lookup_function(&self, name: &str) -> Option<&usize> {
         self.headers.functions.get(name)
     }
+
+    pub fn lookup_class_template(&self, name: &str) -> Option<&ClassTemplate> {
+        self.headers.classes.get(name)
+    }
 }
-
-

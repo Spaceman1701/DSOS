@@ -18,6 +18,10 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
     }
 
     functions.foreach{case (name, _) => stringsBuffer.add(name)}
+    classes.foreach {desc =>
+      stringsBuffer.add(desc.name)
+      desc.members.keys.foreach(name => stringsBuffer.add(name))
+    }
 
     bytecodePts = bytecodePts.reverse
     println("bytecode starts at " + bytecodePts(0))
@@ -62,30 +66,38 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
     }
 
     classes.foreach{desc =>
-      val classNameIndex = stringsBuffer.add(desc.name).toInt
+      val classNameIndex = stringsOffsets(stringsBuffer.add(desc.name).toInt)
 
       for ((name, value) <- desc.members) {
-        val nameIndex = stringsBuffer.add(name).toInt
+        val nameIndex = stringsOffsets(stringsBuffer.add(name).toInt)
+        var fieldType: Byte = 3
         val data = value match {
           case None => Array[Byte](0)
           case Some(value) => value match {
             case LiteralStringValue(v) =>
-              val ptr = stringsBuffer.add(v)
-              ByteBuffer.allocate(8)
-                .order(ByteOrder.LITTLE_ENDIAN)
+              val ptr = stringsOffsets(stringsBuffer.add(v).toInt)
+              println("literal string member '" + v + "' has index " + ptr)
+              val data = ByteBuffer.allocate(8)
+                .order(ByteOrder.BIG_ENDIAN)
                 .putLong(ptr).array()
+              fieldType = 2
+              data
             case LiteralIntValue(v) =>
-              ByteBuffer.allocate(8)
-                .order(ByteOrder.LITTLE_ENDIAN)
+              val data = ByteBuffer.allocate(8)
+                .order(ByteOrder.BIG_ENDIAN)
                 .putLong(v).array()
+              fieldType = 0
+              data
             case LiteralFloatValue(v) =>
-              ByteBuffer.allocate(8)
-                .order(ByteOrder.LITTLE_ENDIAN)
+              val data = ByteBuffer.allocate(8)
+                .order(ByteOrder.BIG_ENDIAN)
                 .putDouble(v).array()
+              fieldType = 1
+              data
           }
         }
 
-        val header = ClassHeaderField(classNameIndex, nameIndex, data)
+        val header = ClassHeaderField(classNameIndex, fieldType, nameIndex, data)
         headerFields.addOne(header)
       }
     }
