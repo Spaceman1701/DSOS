@@ -13,27 +13,27 @@ macro_rules! numeric_binop {
         {
         let second = $vm.call_stack.active_exe().pop();
         let first = $vm.call_stack.active_exe().pop();
-        match (first, second) {
+        match (&first, &second) {
             (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
-                let value = *left $operator *right;
+                let value = **left $operator **right;
                 let result = $vm.allocate_and_assign_int(value);
                 $vm.call_stack.active_exe().push(result);
             }
 
             (ObjRef::Float(_, left), ObjRef::Float(_, right)) => {
-                let value = *left $operator *right;
+                let value = **left $operator **right;
                 let result = $vm.allocate_and_assign_float(value);
                 $vm.call_stack.active_exe().push(result);
             }
 
             (ObjRef::Float(_, left), ObjRef::Int(_, right)) => {
-                let value = *left $operator ((*right) as f64);
+                let value = **left $operator ((**right) as f64);
                 let result = $vm.allocate_and_assign_float(value);
                 $vm.call_stack.active_exe().push(result);
             }
 
             (ObjRef::Int(_, left), ObjRef::Float(_, right)) => {
-                let value = ((*left) as f64) $operator *right;
+                let value = ((**left) as f64) $operator **right;
                 let result = $vm.allocate_and_assign_float(value);
                 $vm.call_stack.active_exe().push(result);
             }
@@ -51,28 +51,28 @@ macro_rules! comparison {
         let second = $vm.call_stack.active_exe().pop();
         let first = $vm.call_stack.active_exe().pop();
         vm_debug!("loaded two refs off the stack");
-        match (first, second) {
+        match (&first, &second) {
             (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
                 vm_debug!("{} comp {}", left, right);
-                let value = if *left $operator *right {1} else {0};
+                let value = if **left $operator **right {1} else {0};
                 let result = $vm.allocate_and_assign_int(value);
                 $vm.call_stack.active_exe().push(result);
             }
 
             (ObjRef::Float(_, left), ObjRef::Float(_, right)) => {
-                let value = if *left $operator *right {1} else {0};
+                let value = if **left $operator **right {1} else {0};
                 let result = $vm.allocate_and_assign_int(value);
                 $vm.call_stack.active_exe().push(result);
             }
 
             (ObjRef::Float(_, left), ObjRef::Int(_, right)) => {
-                let value = if *left $operator ((*right) as f64) {1} else {0};
+                let value = if **left $operator ((**right) as f64) {1} else {0};
                 let result = $vm.allocate_and_assign_int(value);
                 $vm.call_stack.active_exe().push(result);
             }
 
             (ObjRef::Int(_, left), ObjRef::Float(_, right)) => {
-                let value = if ((*left) as f64) $operator *right {1} else {0};
+                let value = if ((**left) as f64) $operator **right {1} else {0};
                 let result = $vm.allocate_and_assign_int(value);
                 $vm.call_stack.active_exe().push(result);
             }
@@ -88,9 +88,9 @@ macro_rules! int_only_binop {
         {
         let second = $vm.call_stack.active_exe().pop();
         let first = $vm.call_stack.active_exe().pop();
-        match (first, second) {
+        match (&first, &second) {
             (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
-                let value = *left $operator *right;
+                let value = **left $operator **right;
                 let result = $vm.allocate_and_assign_int(value);
                 $vm.call_stack.active_exe().push(result);
             }

@@ -19,6 +19,7 @@ class NameBuffer() {
     if (ptrMap.contains(text)) {
       (ptrMap(text), false)
     } else {
+      println("adding str " + text + " and str list is already " + strList.size + " long")
       strList.addOne(text)
       val partIndex = strList.size - 1
       ptrMap = ptrMap + (text -> partIndex)

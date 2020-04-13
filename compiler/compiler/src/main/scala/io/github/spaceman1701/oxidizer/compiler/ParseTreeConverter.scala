@@ -322,7 +322,7 @@ class ParseTreeConverter extends OxidizerParserBaseVisitor[AST] {
   override def visitFuncdef(ctx: OxidizerParser.FuncdefContext): FunctionDef = {
     val isPrivate = ctx.KW_PRIVATE() != null
     val name = ctx.NAME(0).getText
-    val params = ctx.NAME().asScala.toList.takeRight(1).map(_.getText)
+    val params = ctx.NAME().asScala.toList.drop(1).map(_.getText)
     val body = visitStmtBlock(ctx.block())
     FunctionDef(isPrivate, name, params, body)
   }

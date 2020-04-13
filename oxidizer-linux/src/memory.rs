@@ -32,7 +32,7 @@ pub enum AllocType {
 
 #[repr(C)]
 pub struct AllocHeader {
-    reference_count: u32,
+    pub reference_count: u32,
     size: u32,
     padding_after: u8,
     mem_type: AllocType,

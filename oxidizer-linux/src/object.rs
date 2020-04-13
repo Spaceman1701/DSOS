@@ -74,3 +74,31 @@ impl Clone for ObjRef <'_> {
 
     }
 }
+
+unsafe impl Drop for ObjRef<'_> {
+    fn drop(&mut self) {
+//        let mut header_option= match self {
+//            ObjRef::Int(h, _) => &mut Some(*h),
+//            ObjRef::Float(h, _) => &mut Some(*h),
+//            ObjRef::String(h, _) => h,
+//            ObjRef::Object(h, _) => &mut Some(*h),
+//        };
+//
+//        header_option.map(|mut header| {
+//            header.reference_count -= 1;
+//            println!("dropped reference");
+//        });
+
+//        match self {
+//            ObjRef::Int(h, _) => {h.reference_count -= 1},
+//            ObjRef::Float(h, _) => {h.reference_count -= 1},
+//            ObjRef::String(opt, _) => {
+//                match &opt {
+//                    None => {},
+//                    Some(ref mut h) => {h.reference_count -= 1},
+//                }
+//            },
+//            ObjRef::Object(h, _) => {h.reference_count -= 1},
+//    }
+    }
+}

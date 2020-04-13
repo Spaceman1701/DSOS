@@ -88,6 +88,7 @@ class BytecodeGenerator {
               })
             case WhileLoop(cond, body) =>
               val loopStart = bytecodeBuffer.size
+              println("loop starts at " + loopStart)
               emitExpr(cond)
               val jumpIns = NoOp >>: this
               generate(body)
