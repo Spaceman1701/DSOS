@@ -23,6 +23,7 @@ impl Clone for ObjRef <'_> {
                     let header_ptr_const = header_ptr as *const AllocHeader;
                     let header_ptr_mut = header_ptr_const as *mut AllocHeader;
                     let header_out = &mut *header_ptr_mut;
+                    header_out.reference_count += 1;
 
                     let value_ptr: &i64 = *(v as * const &mut i64);
                     let value_ptr_const = value_ptr as *const i64;
@@ -36,6 +37,7 @@ impl Clone for ObjRef <'_> {
                     let header_ptr_const = header_ptr as *const AllocHeader;
                     let header_ptr_mut = header_ptr_const as *mut AllocHeader;
                     let header_out = &mut *header_ptr_mut;
+                    header_out.reference_count += 1;
 
                     let value_ptr: &f64 = *(v as * const &mut f64);
                     let value_ptr_const = value_ptr as *const f64;
@@ -49,6 +51,7 @@ impl Clone for ObjRef <'_> {
                     let header_ptr_const = header_ptr as *const AllocHeader;
                     let header_ptr_mut = header_ptr_const as *mut AllocHeader;
                     let header_out = &mut *header_ptr_mut;
+                    header_out.reference_count += 1;
 
                     let value_ptr: &Object = *(v as * const &mut Object);
                     let value_ptr_const = value_ptr as *const Object;
@@ -62,6 +65,7 @@ impl Clone for ObjRef <'_> {
                         let header_ptr: &AllocHeader = *(h as *const &mut AllocHeader);
                         let header_ptr_const = header_ptr as *const AllocHeader;
                         let header_ptr_mut = header_ptr_const as *mut AllocHeader;
+                        (*header_ptr_mut).reference_count += 1;
                         &mut *header_ptr_mut
                     });
 
@@ -75,30 +79,20 @@ impl Clone for ObjRef <'_> {
     }
 }
 
-unsafe impl Drop for ObjRef<'_> {
+impl <'a> Drop for ObjRef<'a> {
     fn drop(&mut self) {
-//        let mut header_option= match self {
-//            ObjRef::Int(h, _) => &mut Some(*h),
-//            ObjRef::Float(h, _) => &mut Some(*h),
-//            ObjRef::String(h, _) => h,
-//            ObjRef::Object(h, _) => &mut Some(*h),
-//        };
-//
-//        header_option.map(|mut header| {
-//            header.reference_count -= 1;
-//            println!("dropped reference");
-//        });
+        let header = match self {
+            ObjRef::String(opt, _) => {
+                match opt {
+                    Some(h) => Some(h),
+                    None => None
+                }
+            },
+            ObjRef::Int(h, _) => Some(h),
+            ObjRef::Float(h, _) => Some(h),
+            ObjRef::Object(h, _) => Some(h),
+        };
 
-//        match self {
-//            ObjRef::Int(h, _) => {h.reference_count -= 1},
-//            ObjRef::Float(h, _) => {h.reference_count -= 1},
-//            ObjRef::String(opt, _) => {
-//                match &opt {
-//                    None => {},
-//                    Some(ref mut h) => {h.reference_count -= 1},
-//                }
-//            },
-//            ObjRef::Object(h, _) => {h.reference_count -= 1},
-//    }
+        header.map(|h| h.reference_count -= 1);
     }
 }

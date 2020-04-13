@@ -3,7 +3,6 @@ use std::str::Utf8Error;
 
 use crate::instruction::Instruction;
 use std::collections::HashMap;
-use core::borrow::Borrow;
 
 pub struct Program {
     buffer: Vec<u8>,
@@ -66,7 +65,7 @@ impl Program {
                     let str_index = Program::bytes_to_u32(&self.buffer[index + 1 .. index + 5]);
                     let instruction = Program::bytes_to_u32(&self.buffer[index + 5.. index + 9]);
 
-                    let string = self.read_str(str_index).unwrap_or_else(|e| panic!());
+                    let string = self.read_str(str_index).unwrap_or_else(|_e| panic!());
 
 
                     let owned_string = String::from(string);

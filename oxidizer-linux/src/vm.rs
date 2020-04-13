@@ -4,7 +4,7 @@ use crate::instruction::Instruction;
 use crate::memory;
 use crate::memory::{Heap, AllocType};
 use crate::object::{ObjRef};
-use crate::call_stack::{CallStack, StackFrame};
+use crate::call_stack::{CallStack};
 #[macro_use] use crate::debug_macros;
 
 
@@ -122,7 +122,7 @@ impl <'program> VM<'program> {
         self.call_stack.ip()
     }
 
-    pub fn execute(&'program mut self) {
+    pub fn execute(&mut self) {
 
         let main_ip = match self.program.lookup_function("main") {
             None => {

@@ -1,6 +1,4 @@
 use crate::object::ObjRef;
-use std::process::exit;
-
 
 pub struct CallStack<'heap> {
     stack: Vec<StackFrame<'heap>>,
