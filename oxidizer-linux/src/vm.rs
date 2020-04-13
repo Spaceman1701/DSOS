@@ -175,7 +175,15 @@ impl <'program> VM<'program> {
                 let obj = self.call_stack.active_frame().get(ptr).unwrap();
                 self.call_stack.active_exe().push(obj);
             },
-            Instruction::CreateObject => {},
+            Instruction::CreateObject => {
+                let mut obj = self.heap.allocate(AllocType::Object);
+                match obj {
+                    ObjRef::Object(_, ref mut object) => {
+                        object.fields.insert("foo", ObjRef::String(None, "foobar"));
+                    },
+                    _ => unreachable!()
+                }
+            },
             Instruction::SliceList => {},
             Instruction::Add => {numeric_binop!(+, self)},
             Instruction::Sub => {numeric_binop!(-, self)},
@@ -189,7 +197,26 @@ impl <'program> VM<'program> {
             Instruction::CompG => {comparison!(>, self)},
             Instruction::CompL => {comparison!(<, self)},
             Instruction::CompEq => {comparison!(==, self)},
-            Instruction::LoadMember => {},
+            Instruction::LoadMember => {
+                let mut obj = self.call_stack.active_exe().pop();
+                let mut field_name = self.call_stack.active_exe().pop();
+
+                match (obj, field_name) {
+                    (ObjRef::Object(_, ref mut the_object), ObjRef::String(_, ref the_str)) => {
+                        println!("loading member {}", the_str);
+
+                        match the_object.fields.get(the_str) {
+                            None => panic!("error loading member: member does not exist"),
+                            Some(ref mut member) => {
+                                let cloned_member = member.clone();
+                                self.call_stack.active_exe().push(cloned_member);
+                            },
+                        }
+
+                    },
+                    _ => panic!("error loading member: bad types.")
+                }
+            },
             Instruction::StoreMember => {},
             Instruction::Call => {
                 vm_debug!("debug CALL");

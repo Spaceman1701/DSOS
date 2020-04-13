@@ -93,6 +93,8 @@ impl <'a> Drop for ObjRef<'a> {
             ObjRef::Object(h, _) => Some(h),
         };
 
-        header.map(|h| h.reference_count -= 1);
+        header.map(|h| {
+            h.reference_count -= 1;
+        });
     }
 }
