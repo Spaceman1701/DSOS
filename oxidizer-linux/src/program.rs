@@ -103,7 +103,6 @@ impl Program {
                     let class_name = String::from(self.read_str(Program::bytes_to_u32(&self.buffer[index + 2 .. index + 6])).unwrap_or_else(|_e| panic!()));
                     let field_name = String::from(self.read_str(Program::bytes_to_u32(&self.buffer[index + 6.. index + 10])).unwrap_or_else(|_e| panic!()));
                     let field_value = Program::bytes_to_u64(&self.buffer[index + 10 .. index + 18]);
-                    println!("found field for class '{}': '{}' with value {} (type will be {})", class_name, field_name, field_value, field_type);
 
                     if !self.headers.classes.contains_key(&class_name) {
                         let class_template = ClassTemplate {
@@ -123,7 +122,6 @@ impl Program {
                         },
                         2 => {
                             let owned_field = self.read_owned_str(field_value as u32);
-                            println!("type 2 field value is {}", owned_field);
                             let mut class_template = self.headers.classes.get_mut(&class_name).unwrap();
                             class_template.predefined_fields.insert(field_name, FieldData::String(owned_field));
                         },

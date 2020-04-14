@@ -101,6 +101,13 @@ macro_rules! int_only_binop {
     }
 }
 
+macro_rules! concat_branch {
+    ($vm: expr, $left: expr, $right: expr) => {{
+        let concat = format!("{}{}", $left, $right);
+        let result = $vm.heap.allocate_str(concat.as_str());
+        $vm.call_stack.active_exe().push(result);
+    }}
+}
 
 
 pub struct VM<'a> {
@@ -121,6 +128,13 @@ impl <'program> VM<'program> {
     #[inline]
     fn ip(&mut self) -> &mut usize {
         self.call_stack.ip()
+    }
+
+    fn exit(&mut self, code: i32) {
+        if code != 0 {
+            self.call_stack.active_frame().print_debug_info();
+        }
+        exit(code);
     }
 
     pub fn execute(&mut self) {
@@ -217,9 +231,9 @@ impl <'program> VM<'program> {
                 let mut field_name = self.call_stack.active_exe().pop();
                 let mut obj = self.call_stack.active_exe().pop();
 
-                match (obj, field_name) {
-                    (ObjRef::Object(_, ref mut the_object), ObjRef::String(_, ref the_str)) => {
-                        println!("loading member {}", the_str);
+                match (&mut obj, field_name) {
+                    (ObjRef::Object(_, the_object), ObjRef::String(_, ref the_str)) => {
+                        vm_debug!("loading member {}", the_str);
 
                         match the_object.fields.get(the_str) {
                             None => panic!("error loading member: member does not exist ('{}')", the_str),
@@ -230,10 +244,15 @@ impl <'program> VM<'program> {
                         }
 
                     },
-                    _ => panic!("error loading member: bad types.")
+                    _ => {
+                        println!("cannot load method from {:?}", &obj);
+                        self.exit(-1);
+                    }
                 }
             },
-            Instruction::StoreMember => {},
+            Instruction::StoreMember => {
+
+            },
             Instruction::Call => {
                 vm_debug!("debug CALL");
                 let function_name = self.call_stack.active_exe().pop();
@@ -256,12 +275,15 @@ impl <'program> VM<'program> {
                             exit(0);
                         } else {
                             match self.program.lookup_function(*fun_name) {
-                                None => panic!("failed to find function '{}'", *fun_name),
+                                None => {
+                                    println!("failed to find function '{}'", *fun_name);
+                                    self.exit(-1);
+                                },
                                 Some(ptr) => {
                                     control_change = true;
                                     (*self.ip()) = *self.ip() + skip;
                                     self.call_stack.push_new(*ptr);
-                                    for (i, p) in params.iter().enumerate() {
+                                    for (i, p) in (&params).into_iter().enumerate() {
                                         self.call_stack.active_frame().store(p, i as u16);
                                     }
                                 }
@@ -339,6 +361,9 @@ impl <'program> VM<'program> {
             Instruction::Consume => {
                 self.call_stack.active_exe().pop_optional();
             },
+            Instruction::SwapTOS2WithTOS3 => {
+                self.call_stack.active_exe().swap_from_end(1, 2);
+            }
         }
 
         if !control_change {
@@ -353,33 +378,20 @@ impl <'program> VM<'program> {
         let second = self.call_stack.active_exe().pop();
 
         match (&second, &first) {
-            (ObjRef::String(_, left), ObjRef::String(_, right)) => {
-                let concat = format!("{}{}", left, right);
-                let result = self.heap.allocate_str(concat.as_str());
-                self.call_stack.active_exe().push(result);
+            (ObjRef::String(_, left), ObjRef::String(_, right)) => concat_branch!(self, left, right),
+            (ObjRef::Int(_, left), ObjRef::String(_, right)) => concat_branch!(self, left, right),
+            (ObjRef::Float(_, left), ObjRef::String(_, right)) => concat_branch!(self, left, right),
+            (ObjRef::String(_, left), ObjRef::Int(_, right)) => concat_branch!(self, left, right),
+            (ObjRef::String(_, left), ObjRef::Float(_, right)) => concat_branch!(self, left, right),
+            (ObjRef::Float(_, left), ObjRef::Float(_, right)) => concat_branch!(self, left, right),
+            (ObjRef::Int(_, left), ObjRef::Int(_, right)) => concat_branch!(self, left, right),
+            (ObjRef::Float(_, left), ObjRef::Int(_, right)) => concat_branch!(self, left, right),
+            (ObjRef::Int(_, left), ObjRef::Float(_, right)) => concat_branch!(self, left, right),
+            _ => {
+                self.call_stack.active_frame().print_debug_info();
+                println!("concat type error: {:?} and {:?} cannot be concatenated ", second, first);
+                exit(0);
             }
-            (ObjRef::Int(_, left), ObjRef::String(_, right)) => {
-                let concat = format!("{}{}", left, right);
-                let result = self.heap.allocate_str(concat.as_str());
-                self.call_stack.active_exe().push(result);
-            }
-            (ObjRef::Float(_, left), ObjRef::String(_, right)) => {
-                let concat = format!("{}{}", left, right);
-                let result = self.heap.allocate_str(concat.as_str());
-                self.call_stack.active_exe().push(result);
-            }
-            (ObjRef::String(_, left), ObjRef::Int(_, right)) => {
-                let concat = format!("{}{}", left, right);
-                let result = self.heap.allocate_str(concat.as_str());
-                self.call_stack.active_exe().push(result);
-            }
-            (ObjRef::String(_, left), ObjRef::Float(_, right)) => {
-                let concat = format!("{}{}", left, right);
-                let result = self.heap.allocate_str(concat.as_str());
-                self.call_stack.active_exe().push(result);
-            }
-
-            _ => panic!("alkdjaklsdjakdsl")
         }
     }
 

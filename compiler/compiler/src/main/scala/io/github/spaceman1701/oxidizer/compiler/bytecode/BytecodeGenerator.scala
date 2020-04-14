@@ -268,13 +268,15 @@ class BytecodeGenerator {
   }
 
   def emitFunctionCall(ident: String, params: List[Expr]): Unit = {
-    for (p <- params) {
+    for (p <- params.reverse) {
       emitExpr(p)
     }
-    LoadConstInt(params.length) >>: this
     if (isHeapIdent(ident)) {
-      generateMemberLoad(ident)
+      LoadConstInt(params.length + 1) >>: this
+      generateMemberFunctionLoad(ident) //BOS -> [param_count, self, function_handle] -> TOS
+      SwapTOS2WithTOS3 >>: this //[self, param_count, function_handle]
     } else {
+      LoadConstInt(params.length) >>: this
       val ptr = stringConstants.add(ident)
       LoadConstStr(new U32(ptr)) >>: this
     }
@@ -315,6 +317,23 @@ class BytecodeGenerator {
       stringConstants.add(piece)
       LoadConstStr(new U32(stringConstants.add(piece))) >>: this
       LoadMember >>: this //each member piece is a new objref on the stack
+    }
+    //result is one objref added to the stack
+  }
+
+  def generateMemberFunctionLoad(ident: String): Unit = {
+    val pieces = ident.split("\\.")
+    LoadVar(new U16(localVar(pieces(0)))) >>: this//base of name must be a local variable objref
+    if (pieces.length == 2) {
+      Dup >>: this
+    }
+    for ((piece, index) <- pieces.slice(1, pieces.size).zipWithIndex) {
+      stringConstants.add(piece)
+      LoadConstStr(new U32(stringConstants.add(piece))) >>: this
+      LoadMember >>: this //each member piece is a new objref on the stack
+      if (index == pieces.size - 2 && pieces.length != 2) {
+        Dup >>: this
+      }
     }
     //result is one objref added to the stack
   }

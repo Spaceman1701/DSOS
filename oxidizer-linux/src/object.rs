@@ -3,10 +3,12 @@ use std::collections::HashMap;
 use crate::memory;
 use crate::memory::AllocHeader;
 
+#[derive(Debug)]
 pub struct Object<'heap> {
     pub fields: HashMap<&'heap str, ObjRef<'heap>> //TODO: reimplement HashMap and Vec
 }
 
+#[derive(Debug)]
 pub enum ObjRef<'heap> {
     Int(&'heap mut memory::AllocHeader, &'heap mut i64),
     Float(&'heap mut memory::AllocHeader, &'heap mut f64),

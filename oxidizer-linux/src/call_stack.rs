@@ -83,6 +83,13 @@ impl <'heap> StackFrame<'heap> {
             }
         }
     }
+
+    pub fn print_debug_info(&self) {
+        println!("---- STACK FRAME ----");
+        for (index, value) in self.locals.iter().enumerate() {
+            println!("{} -- {:?}", index, value);
+        }
+    }
 }
 
 impl <'heap> ExecutionStack<'heap> {
@@ -106,5 +113,11 @@ impl <'heap> ExecutionStack<'heap> {
 
     pub fn peek(&mut self) -> &mut ObjRef<'heap> {
         self.stack.last_mut().unwrap()
+    }
+
+    pub fn swap_from_end(&mut self, a: usize, b: usize) {
+        let a_from_end = self.stack.len() - 1 - a;
+        let b_from_end = self.stack.len() - 1 - b;
+        self.stack.swap(a_from_end, b_from_end);
     }
 }

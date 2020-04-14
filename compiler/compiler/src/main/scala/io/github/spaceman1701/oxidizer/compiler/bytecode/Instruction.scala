@@ -224,6 +224,11 @@ case object Dup extends Instruction { //objref -> objref, objref
 case object Consume extends Instruction { //consumes the tos
   val opcode = 41
 }
+
+case object SwapTOS2WithTOS3 extends Instruction {
+  val opcode = 42
+}
+
 /*
 Following instructions:
 Used for the bytecode generator. Cannot be produced in real code.

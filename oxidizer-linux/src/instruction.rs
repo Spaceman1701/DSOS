@@ -55,7 +55,9 @@ pub enum Instruction {
     BCompliment,
 
     Dup,
-    Consume
+    Consume,
+
+    SwapTOS2WithTOS3
 }
 
 impl Instruction {
@@ -103,6 +105,7 @@ impl Instruction {
             0x27 => Some((BCompliment, 1 as usize)),
             0x28 => Some((Dup, 1 as usize)),
             0x29 => Some((Consume, 1 as usize)),
+            0x2A => Some((SwapTOS2WithTOS3, 1 as usize)),
             _ => {
                 println!("bad opcode {}", bytes[0]);
                 None

@@ -23,6 +23,7 @@ pub struct OxObjObject<'heap> {
     data: object::Object<'heap>
 }
 
+#[derive(Debug)]
 pub enum AllocType {
     Int,
     Float,
@@ -30,7 +31,7 @@ pub enum AllocType {
     String,
 }
 
-#[repr(C)]
+#[repr(C)] #[derive(Debug)]
 pub struct AllocHeader {
     pub reference_count: u32,
     size: u32,
