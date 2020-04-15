@@ -2,8 +2,9 @@ class Foobar {
 
     fooField = 0;
 
-    def constructor(name) {
-        println(name);
+    def constructor(name, self) {
+        println("in constructor");
+        println("${name} has a fooField = ${self.fooField}");
     }
 
     def anotherMethod(self, a, b) {
@@ -24,4 +25,8 @@ def main() {
     println("f.fooField = ${f.fooField}");
     f.fooField = 10;
     println("f.fooField = ${f.fooField}");
+    f.fooField = 10.6;
+    println("f.fooField = ${f.fooField}");
+    f.fooField = new Foobar("second time's the charm");
+    println("f.fooField.fooField = ${f.fooField.fooField}");
 }

@@ -38,7 +38,7 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
       case Jump(target) => Jump(new U32(bytecodePts(target.value.toInt)))
       case IfFalse(target) => IfFalse(new U32(bytecodePts(target.value.toInt)))
       case LoadConstStr(ptr) => {
-        println("load str at ", stringsOffsets(ptr.value.toInt))
+//        println("load str at ", stringsOffsets(ptr.value.toInt))
         LoadConstStr(new U32(stringsOffsets(ptr.value.toInt)))
       }
       case NoOp => throw new IllegalStateException("NoOp was not processed out during initial pre-compile")
@@ -121,7 +121,6 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
         Array(ins.opcode).concat(param)
       case LoadConstStr(ptr) =>
         val param = ptr.toByteArray
-        println(param.length)
         Array(ins.opcode).concat(param)
       case LoadVar(loc) =>
         val param = loc.toByteArray

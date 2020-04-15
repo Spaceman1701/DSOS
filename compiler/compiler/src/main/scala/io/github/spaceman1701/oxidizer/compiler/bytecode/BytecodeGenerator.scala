@@ -206,10 +206,18 @@ class BytecodeGenerator {
     val objName = stringConstants.add(ident)
     LoadConstStr(new U32(objName)) >>: this
     CreateObject >>: this
+    Dup >>: this //the constructor call will consume one reference
+
+    for (p <- params.reverse) {
+      emitExpr(p)
+    }
+
+    LoadConstInt(params.length + 1) >>: this //params length + newly created object
+
     val ctrStr = mangleName(ident, "constructor")
-    emitFunctionCall(ctrStr, params)
-
-
+    val ptr = stringConstants.add(ctrStr)
+    LoadConstStr(new U32(ptr)) >>: this
+    Call >>: this
   }
 
   private def mangleName(className: String, memberName: String) = className + "__" + memberName
