@@ -130,9 +130,9 @@ impl <'program> VM<'program> {
         self.call_stack.ip()
     }
 
-    fn exit(&mut self, code: i32) {
+    fn exit(&self, code: i32) -> !  {
         if code != 0 {
-            self.call_stack.active_frame().print_debug_info();
+            self.call_stack.read_only_frame().print_debug_info();
         }
         exit(code);
     }
@@ -245,13 +245,25 @@ impl <'program> VM<'program> {
 
                     },
                     _ => {
-                        println!("cannot load method from {:?}", &obj);
+                        println!("cannot load member from {:?}", &obj);
                         self.exit(-1);
                     }
                 }
             },
-            Instruction::StoreMember => {
+            Instruction::StoreMember => unsafe {
+                let member_name = self.call_stack.active_exe().pop();
+                let mut target_object = self.call_stack.active_exe().pop();
+                let source = self.call_stack.active_exe().pop();
 
+                match (&mut target_object, &member_name) {
+                    (ObjRef::Object(_, the_obj), ObjRef::String(_, the_str)) => {
+                        the_obj.fields.insert(the_str, source);
+                    },
+                    _ => {
+                        println!("value does not have members");
+                        self.exit(-1);
+                    }
+                }
             },
             Instruction::Call => {
                 vm_debug!("debug CALL");
@@ -399,7 +411,8 @@ impl <'program> VM<'program> {
         return match self.program.read_str(ptr) {
             Ok(the_str) => the_str,
             Err(_) => {
-                panic!("error reading string at {}", ptr);
+                println!("error reading string at {}", ptr);
+                self.exit(-1);
             },
         }
     }

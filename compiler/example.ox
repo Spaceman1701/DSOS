@@ -1,4 +1,7 @@
 class Foobar {
+
+    fooField = 0;
+
     def constructor(name) {
         println(name);
     }
@@ -14,6 +17,7 @@ class Foobar {
 }
 
 def main() {
+    println(10000);
     f = new Foobar("this is a class method!");
-    f.anotherMethod(1, 2);
+    f.anotherMethod("ethan's", "code sucks");
 }

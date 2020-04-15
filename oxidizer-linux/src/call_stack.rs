@@ -48,6 +48,13 @@ impl <'heap> CallStack <'heap> {
         }
     }
 
+    pub fn read_only_frame(&self) -> &StackFrame<'heap> {
+        match self.stack.last() {
+            None => unreachable!(),
+            Some(value) => value,
+        }
+    }
+
     pub fn active_exe(&mut self) -> &mut ExecutionStack<'heap> {
         match self.exe_stack.last_mut() {
             None => unreachable!(),

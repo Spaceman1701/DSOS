@@ -52,7 +52,7 @@ class BytecodeGenerator {
           emitExpr(expr) //leaves one on the stack
 
           if (isHeapIdent(ident)) {
-            generateMemberLoad(ident) //load the ref to the member we will store to
+            generateMemberLoadForHeapStore(ident) //load the ref to the member we will store to
             StoreMember >>: this
           } else {
             Store(new U16(index)) >>: this //store as local var
@@ -319,6 +319,18 @@ class BytecodeGenerator {
       LoadMember >>: this //each member piece is a new objref on the stack
     }
     //result is one objref added to the stack
+  }
+
+  def generateMemberLoadForHeapStore(ident: String): Unit = {
+    val pieces = ident.split("\\.")
+    LoadVar(new U16(localVar(pieces(0)))) >>: this//base of name must be a local variable objref
+    for ((piece, index) <- pieces.slice(1, pieces.size).zipWithIndex) {
+      stringConstants.add(piece)
+      LoadConstStr(new U32(stringConstants.add(piece))) >>: this
+      if (index < pieces.size - 2) {
+        LoadMember >>: this //each member piece is a new objref on the stack
+      }
+    }
   }
 
   def generateMemberFunctionLoad(ident: String): Unit = {

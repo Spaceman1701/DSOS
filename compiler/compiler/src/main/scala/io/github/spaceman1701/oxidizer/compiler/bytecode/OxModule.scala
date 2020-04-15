@@ -34,8 +34,6 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
 
     stringsOffsets = stringsOffsets.reverse
 
-    println(stringsOffsets)
-
     val processedIns = bytecode.map {
       case Jump(target) => Jump(new U32(bytecodePts(target.value.toInt)))
       case IfFalse(target) => IfFalse(new U32(bytecodePts(target.value.toInt)))
@@ -59,7 +57,7 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
     val headerFields = ListBuffer[HeaderField]()
 
     processedFunctions.foreach{case (name, ptr) =>
-        println("function header", name, ptr)
+//        println("function header", name, ptr)
         val header = FunctionField(stringsOffsets(stringsBuffer.add(name).toInt), ptr)
         headerFields.addOne(header)
 
@@ -76,7 +74,7 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
           case Some(value) => value match {
             case LiteralStringValue(v) =>
               val ptr = stringsOffsets(stringsBuffer.add(v).toInt)
-              println("literal string member '" + v + "' has index " + ptr)
+//              println("literal string member '" + v + "' has index " + ptr)
               val data = ByteBuffer.allocate(8)
                 .order(ByteOrder.BIG_ENDIAN)
                 .putLong(ptr).array()
@@ -100,12 +98,6 @@ class OxModule(val classes: List[ClassDescriptor], val functions: Map[String, Lo
         val header = ClassHeaderField(classNameIndex, fieldType, nameIndex, data)
         headerFields.addOne(header)
       }
-    }
-
-    headerFields.foreach{f =>
-      val bytes = f.toBytes
-      val str = ByteBuffer.wrap(Array[Byte](bytes(1), bytes(2), bytes(3), bytes(4))).getInt
-      println("str", str)
     }
     val headerBytes = headerFields.flatMap{field => field.toBytes}.toArray
 

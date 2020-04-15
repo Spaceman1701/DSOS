@@ -1,5 +1,7 @@
 package io.github.spaceman1701.oxidizer.compiler.util
 
+import java.util
+
 import scala.math.{ScalaNumber, ScalaNumericConversions}
 
 class Unsigned(private val bits: Int, val value: BigInt) {
@@ -11,8 +13,7 @@ class Unsigned(private val bits: Int, val value: BigInt) {
 
   def toByteArray = {
     val expectedSize = bits / 8
-    println("expected size " + expectedSize)
-    val array = value.toByteArray
+    val array = value.toByteArray.reverse
     if (array.length < expectedSize) {
       val missingBytes = expectedSize - array.length
       val zeros = Array.ofDim[Byte](missingBytes)
