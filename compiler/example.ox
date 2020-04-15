@@ -20,4 +20,8 @@ def main() {
     println(10000);
     f = new Foobar("this is a class method!");
     f.anotherMethod("ethan's", "code sucks");
+
+    println("f.fooField = ${f.fooField}");
+    f.fooField = 10;
+    println("f.fooField = ${f.fooField}");
 }
