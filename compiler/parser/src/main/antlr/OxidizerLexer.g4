@@ -22,7 +22,7 @@ KW_CASE: 'case';
 KW_SWITCH: 'switch';
 KW_BREAK: 'break';
 KW_CONTINUE: 'continue';
-KW_SPAWN: 'spwan';
+KW_SPAWN: 'spawn';
 KW_LISTEN: 'listen';
 KW_SEND: 'send';
 KW_THROW: 'throw';
@@ -30,6 +30,8 @@ KW_CATCH: 'catch';
 KW_TRY: 'try';
 KW_FINALLY: 'finally';
 KW_NEW: 'new';
+KW_TRUE: 'true';
+KW_FALSE: 'false';
 
 
 OP_LSHIFT: '<<';
@@ -79,6 +81,8 @@ RBRACE: '}' -> popMode;
 INTEGER : DIGIT+;
 FLOAT: DIGIT+ ('.' DIGIT* 'f'? | 'f');
 NAME : (LOWERCASE | UPPERCASE) [a-zA-Z0-9_.]*;
+
+COMMENT_LINE: '//' ~[\r\n]* -> skip; //skip comment lines until newline
 
 WS : [ \t\r\n]+ -> skip ; //skip whitespace
 

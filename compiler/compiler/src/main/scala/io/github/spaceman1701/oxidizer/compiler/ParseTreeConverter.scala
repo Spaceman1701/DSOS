@@ -155,6 +155,14 @@ class ParseTreeConverter extends OxidizerParserBaseVisitor[AST] {
     IntLit(ctx.INTEGER().toString.toLong)
   }
 
+  override def visitBoolLit(ctx: OxidizerParser.BoolLitContext): IntLit = {
+    if (ctx.KW_FALSE() != null) {
+      IntLit(0)
+    } else {
+      IntLit(1)
+    }
+  }
+
   override def visitFloatLit(ctx: OxidizerParser.FloatLitContext): FloatLit = {
     FloatLit(ctx.FLOAT().toString.toDouble)
   }

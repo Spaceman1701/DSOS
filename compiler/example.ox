@@ -1,32 +1,67 @@
-class Foobar {
+class HttpRequest {
+    path = 0;
+    contentType = 0;
+    body = 0;
 
-    fooField = 0;
+    def constructor(path, contentType, body, self) {
+        self.path = path;
+        self.contentType = contentType;
+        self.body = body;
+    }
+}
 
-    def constructor(name, self) {
-        println("in constructor");
-        println("${name} has a fooField = ${self.fooField}");
+
+class HttpResponse {
+    body = 0;
+    contentType = 0;
+    code = 0;
+
+    def constructor(builder, self) {
+        self.body = builder.body;
+        self.contentType = builder.contentType;
+        self.code = builder.code;
     }
 
-    def anotherMethod(self, a, b) {
-        println("in another method");
-        println("${self.sayHi()} ${a} ${b}");
+    def toString(self) {
+        return "HttpResponse - code: ${self.code}; contentType: ${self.contentType}; body: ${self.body}";
+    }
+}
+
+class HttpResponseBuilder {
+    body = 0;
+    contentType = 0;
+    code = 200;
+
+    def constructor(self) {}
+
+    def code(self, code) {
+        self.code = code;
+        return self;
     }
 
-    def sayHi() {
-        return "hi";
+    def contentType(self, contentType) {
+        self.contentType = contentType;
+        return self;
+    }
+
+    def body(self, body) {
+        self.body = body;
+        return self;
+    }
+
+    def build(self) {
+        return new HttpResponse(self);
     }
 }
 
 def main() {
-    println(10000);
-    f = new Foobar("this is a class method!");
-    f.anotherMethod("ethan's", "code sucks");
+    println("Welcome to the Oxidizer Web Server");
 
-    println("f.fooField = ${f.fooField}");
-    f.fooField = 10;
-    println("f.fooField = ${f.fooField}");
-    f.fooField = 10.6;
-    println("f.fooField = ${f.fooField}");
-    f.fooField = new Foobar("second time's the charm");
-    println("f.fooField.fooField = ${f.fooField.fooField}");
+    response = new HttpResponseBuilder()
+    response.code(404);
+    response.contentType("text/plain");
+    response.body("Hello, World");
+    response = response.build();
+
+    println(response.toString());
 }

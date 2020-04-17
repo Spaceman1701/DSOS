@@ -174,10 +174,10 @@ case object SpawnCoroutine extends Instruction { //objref(callable)
 IPC instructions. Write suspends current thread. Read suspends until object is placed on channel
  */
 //TODO: Maybe these should use PostEvent and WaitEvent
-case object WriteChannel extends Instruction { //objref -> []
+case object SendAsync extends Instruction { //objref -> []
   val opcode = 29
 }
-case object ReadChannel extends Instruction { //objref(channel) -> objref
+case object ListenAsync extends Instruction { //objref(channel) -> objref
   val opcode = 30
 }
 

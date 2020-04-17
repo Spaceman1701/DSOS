@@ -7,36 +7,38 @@ use crate::object::{ObjRef};
 use crate::call_stack::{CallStack};
 #[macro_use] use crate::debug_macros;
 use crate::program::FieldData;
+use crate::coroutine::Coroutine;
+use crate::event_manager::{EventManager, EventData, Event};
 
 
 macro_rules! numeric_binop {
     ($operator: tt, $vm: expr) => {
         {
-        let second = $vm.call_stack.active_exe().pop();
-        let first = $vm.call_stack.active_exe().pop();
+        let second = $vm.cur_thread_mut().stack_mut().active_exe().pop();
+        let first = $vm.cur_thread_mut().stack_mut().active_exe().pop();
         match (&first, &second) {
             (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
                 let value = **left $operator **right;
                 let result = $vm.allocate_and_assign_int(value);
-                $vm.call_stack.active_exe().push(result);
+                $vm.cur_thread_mut().stack_mut().active_exe().push(result);
             }
 
             (ObjRef::Float(_, left), ObjRef::Float(_, right)) => {
                 let value = **left $operator **right;
                 let result = $vm.allocate_and_assign_float(value);
-                $vm.call_stack.active_exe().push(result);
+                $vm.cur_thread_mut().stack_mut().active_exe().push(result);
             }
 
             (ObjRef::Float(_, left), ObjRef::Int(_, right)) => {
                 let value = **left $operator ((**right) as f64);
                 let result = $vm.allocate_and_assign_float(value);
-                $vm.call_stack.active_exe().push(result);
+                $vm.cur_thread_mut().stack_mut().active_exe().push(result);
             }
 
             (ObjRef::Int(_, left), ObjRef::Float(_, right)) => {
                 let value = ((**left) as f64) $operator **right;
                 let result = $vm.allocate_and_assign_float(value);
-                $vm.call_stack.active_exe().push(result);
+                $vm.cur_thread_mut().stack_mut().active_exe().push(result);
             }
 
             _ => exit(-1)
@@ -49,33 +51,33 @@ macro_rules! comparison {
     ($operator: tt, $vm: expr) => {
     {
         vm_debug!("comparison");
-        let second = $vm.call_stack.active_exe().pop();
-        let first = $vm.call_stack.active_exe().pop();
+        let second = $vm.cur_thread_mut().stack_mut().active_exe().pop();
+        let first = $vm.cur_thread_mut().stack_mut().active_exe().pop();
         vm_debug!("loaded two refs off the stack");
         match (&first, &second) {
             (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
                 vm_debug!("{} comp {}", left, right);
                 let value = if **left $operator **right {1} else {0};
                 let result = $vm.allocate_and_assign_int(value);
-                $vm.call_stack.active_exe().push(result);
+                $vm.cur_thread_mut().stack_mut().active_exe().push(result);
             }
 
             (ObjRef::Float(_, left), ObjRef::Float(_, right)) => {
                 let value = if **left $operator **right {1} else {0};
                 let result = $vm.allocate_and_assign_int(value);
-                $vm.call_stack.active_exe().push(result);
+                $vm.cur_thread_mut().stack_mut().active_exe().push(result);
             }
 
             (ObjRef::Float(_, left), ObjRef::Int(_, right)) => {
                 let value = if **left $operator ((**right) as f64) {1} else {0};
                 let result = $vm.allocate_and_assign_int(value);
-                $vm.call_stack.active_exe().push(result);
+                $vm.cur_thread_mut().stack_mut().active_exe().push(result);
             }
 
             (ObjRef::Int(_, left), ObjRef::Float(_, right)) => {
                 let value = if ((**left) as f64) $operator **right {1} else {0};
                 let result = $vm.allocate_and_assign_int(value);
-                $vm.call_stack.active_exe().push(result);
+                $vm.cur_thread_mut().stack_mut().active_exe().push(result);
             }
 
             _ => exit(-1)
@@ -87,13 +89,13 @@ macro_rules! comparison {
 macro_rules! int_only_binop {
     ($operator: tt, $vm: expr) => {
         {
-        let second = $vm.call_stack.active_exe().pop();
-        let first = $vm.call_stack.active_exe().pop();
+        let second = $vm.cur_thread_mut().stack_mut().active_exe().pop();
+        let first = $vm.cur_thread_mut().stack_mut().active_exe().pop();
         match (&first, &second) {
             (ObjRef::Int(_, left), ObjRef::Int(_, right)) => {
                 let value = **left $operator **right;
                 let result = $vm.allocate_and_assign_int(value);
-                $vm.call_stack.active_exe().push(result);
+                $vm.cur_thread_mut().stack_mut().active_exe().push(result);
             }
             _ => exit(-1)
         }
@@ -105,7 +107,7 @@ macro_rules! concat_branch {
     ($vm: expr, $left: expr, $right: expr) => {{
         let concat = format!("{}{}", $left, $right);
         let result = $vm.heap.allocate_str(concat.as_str());
-        $vm.call_stack.active_exe().push(result);
+        $vm.cur_thread_mut().stack_mut().active_exe().push(result);
     }}
 }
 
@@ -113,7 +115,11 @@ macro_rules! concat_branch {
 pub struct VM<'a> {
     program: &'a program::Program,
     heap: Heap<'a>,
-    call_stack: CallStack<'a>
+    threads: Vec<Coroutine<'a>>,
+    active_thread_id: usize,
+    active_thread_index: usize,
+    event_manager: EventManager,
+    event_buffer: Vec<Event>
 }
 
 impl <'program> VM<'program> {
@@ -121,18 +127,40 @@ impl <'program> VM<'program> {
         VM {
             program,
             heap: memory::Heap::new(),
-            call_stack: CallStack::new()
+            threads: vec![Coroutine::new(0)],
+            active_thread_index: 0,
+            active_thread_id: 0,
+            event_manager: EventManager::new(),
+            event_buffer: vec![],
         }
     }
 
     #[inline]
+    fn cur_thread_mut(&mut self) -> &mut Coroutine<'program> {
+        self.threads.get_mut(self.active_thread_index).unwrap()
+    }
+
+    #[inline]
+    fn cur_thread(&self) -> &Coroutine<'program> {
+        self.threads.get(self.active_thread_index).unwrap()
+    }
+
+    fn do_pop(&mut self) -> ObjRef<'program> {
+        self.cur_thread_mut().stack_mut().active_exe().pop()
+    }
+
+    fn do_push(&mut self, obj: ObjRef<'program>) {
+        self.cur_thread_mut().stack_mut().active_exe().push(obj);
+    }
+
+    #[inline]
     fn ip(&mut self) -> &mut usize {
-        self.call_stack.ip()
+        self.cur_thread_mut().stack_mut().ip()
     }
 
     fn exit(&self, code: i32) -> !  {
         if code != 0 {
-            self.call_stack.read_only_frame().print_debug_info();
+            self.cur_thread().stack().read_only_frame().print_debug_info();
         }
         exit(code);
     }
@@ -151,14 +179,20 @@ impl <'program> VM<'program> {
         vm_debug!("main function is at {}", self.ip());
 
         while !self.program.is_done(*self.ip()) {
-            match self.program.get_ins(*self.ip()) {
-                None => {
-                    panic!("instruction decode error at {}", self.ip());
-                },
-                Some((ins, skip)) => {
-                    self.perform_action(ins, skip);
-                },
+            if !self.cur_thread().is_parked() {
+                match self.program.get_ins(*self.ip()) {
+                    None => {
+                        println!("cannot find function 'main'");
+                        self.exit(-1);
+                    },
+                    Some((ins, skip)) => {
+                        self.perform_action(ins, skip);
+                    },
+                }
+            } else {
+                self.run_scheduler();
             }
+
         }
     }
 
@@ -167,31 +201,31 @@ impl <'program> VM<'program> {
         match ins {
             Instruction::Store(ptr) => {
                 vm_debug!("Store {}", ptr);
-                let obj = self.call_stack.active_exe().pop();
-                let frame = self.call_stack.active_frame();
+                let obj = self.do_pop();
+                let frame = self.cur_thread_mut().stack_mut().active_frame();
                 frame.store(&obj, ptr);
             },
             Instruction::LoadConstInt(value) => {
                 vm_debug!("LoadConstInt({})", value);
                 let obj = self.allocate_and_assign_int(value);
-                self.call_stack.active_exe().push(obj);
+                self.do_push(obj);
             },
             Instruction::LoadConstFloat(value) => {
                 let obj = self.allocate_and_assign_float(value);
-                self.call_stack.active_exe().push(obj);
+                self.do_push(obj);
             },
             Instruction::LoadConstStr(ptr) => {
                 let the_str = self.read_string_or_exit(ptr);
                 let obj = ObjRef::String(None, the_str);
-                self.call_stack.active_exe().push(obj);
+                self.do_push(obj);
             },
             Instruction::LoadVar(ptr) => {
                 vm_debug!("LoadVar({})", ptr);
-                let obj = self.call_stack.active_frame().get(ptr).unwrap();
-                self.call_stack.active_exe().push(obj);
+                let obj = self.cur_thread_mut().stack_mut().active_frame().get(ptr).unwrap();
+                self.do_push(obj);
             },
             Instruction::CreateObject => {
-                let obj_name = self.call_stack.active_exe().pop();
+                let obj_name = self.do_pop();
                 let mut obj = self.heap.allocate(AllocType::Object);
 
                 match (obj_name, &mut obj) {
@@ -212,7 +246,7 @@ impl <'program> VM<'program> {
                     _ => panic!("object instantiation error")
                 };
 
-                self.call_stack.active_exe().push(obj);
+                self.do_push(obj);
             },
             Instruction::SliceList => {},
             Instruction::Add => {numeric_binop!(+, self)},
@@ -228,18 +262,21 @@ impl <'program> VM<'program> {
             Instruction::CompL => {comparison!(<, self)},
             Instruction::CompEq => {comparison!(==, self)},
             Instruction::LoadMember => {
-                let mut field_name = self.call_stack.active_exe().pop();
-                let mut obj = self.call_stack.active_exe().pop();
+                let mut field_name = self.do_pop();
+                let mut obj = self.do_pop();
 
                 match (&mut obj, field_name) {
                     (ObjRef::Object(_, the_object), ObjRef::String(_, ref the_str)) => {
                         vm_debug!("loading member {}", the_str);
 
                         match the_object.fields.get(the_str) {
-                            None => panic!("error loading member: member does not exist ('{}')", the_str),
+                            None => {
+                                println!("error loading member: member does not exist ('{}')", the_str);
+                                self.exit(-1);
+                            },
                             Some(ref mut member) => {
                                 let cloned_member = member.clone();
-                                self.call_stack.active_exe().push(cloned_member);
+                                self.do_push(cloned_member);
                             },
                         }
 
@@ -251,9 +288,9 @@ impl <'program> VM<'program> {
                 }
             },
             Instruction::StoreMember => unsafe {
-                let member_name = self.call_stack.active_exe().pop();
-                let mut target_object = self.call_stack.active_exe().pop();
-                let source = self.call_stack.active_exe().pop();
+                let member_name = self.do_pop();
+                let mut target_object = self.do_pop();
+                let source = self.do_pop();
 
                 match (&mut target_object, &member_name) {
                     (ObjRef::Object(_, the_obj), ObjRef::String(_, the_str)) => {
@@ -267,14 +304,14 @@ impl <'program> VM<'program> {
             },
             Instruction::Call => {
                 vm_debug!("debug CALL");
-                let function_name = self.call_stack.active_exe().pop();
-                let param_count = self.call_stack.active_exe().pop();
+                let function_name = self.do_pop();
+                let param_count = self.do_pop();
 
                 match (&function_name, &param_count) {
                     (ObjRef::String(_, fun_name), ObjRef::Int(_, count_num)) => {
                         let mut params: Vec<ObjRef> = Vec::new();
                         for _ in 0..**count_num {
-                            params.push(self.call_stack.active_exe().pop());
+                            params.push(self.do_pop());
                         }
                         if *fun_name == "println" {
                             match params[0] {
@@ -294,9 +331,9 @@ impl <'program> VM<'program> {
                                 Some(ptr) => {
                                     control_change = true;
                                     (*self.ip()) = *self.ip() + skip;
-                                    self.call_stack.push_new(*ptr);
+                                    self.cur_thread_mut().stack_mut().push_new(*ptr);
                                     for (i, p) in (&params).into_iter().enumerate() {
-                                        self.call_stack.active_frame().store(p, i as u16);
+                                        self.cur_thread_mut().stack_mut().active_frame().store(p, i as u16);
                                     }
                                 }
                             }
@@ -314,7 +351,7 @@ impl <'program> VM<'program> {
             Instruction::IfFalse(ptr) => {
                 vm_debug!("IfFalse at ip {}", *self.ip());
                 vm_debug!("IfFalse {}", ptr);
-                let cond = self.call_stack.active_exe().pop();
+                let cond = self.do_pop();
                 match cond {
                     ObjRef::Int(_, 0) => {
                         (*self.ip()) = ptr as usize;
@@ -325,17 +362,17 @@ impl <'program> VM<'program> {
             },
             Instruction::Ret => {
                 control_change = true;
-                match self.call_stack.active_exe().pop_optional() {
+                match self.cur_thread_mut().stack_mut().active_exe().pop_optional() {
                     None => {
-                        if !self.call_stack.pop() {
+                        if !self.cur_thread_mut().stack_mut().pop() {
                             exit(0)
                         }
                     }
                     Some(value) => {
-                        if !self.call_stack.pop() {
+                        if !self.cur_thread_mut().stack_mut().pop() {
                             exit(0);
                         }
-                        self.call_stack.active_exe().push(value);
+                        self.do_push(value);
                     }
                 }
 
@@ -343,15 +380,42 @@ impl <'program> VM<'program> {
             Instruction::Throw => {},
             Instruction::PostEvent => {},
             Instruction::WaitEvent => {},
-            Instruction::Spawn => {},
-            Instruction::WriteChannel => {},
-            Instruction::ReadChannel => {},
+            Instruction::Spawn => {
+                match self.do_pop() {
+                    ObjRef::String(_, ref function_name) => {
+                        let new_tid = self.threads.len();
+                        let mut new_coroutine = Coroutine::new(new_tid);
+                        (*new_coroutine.stack_mut().ip()) = *self.program.lookup_function(function_name).unwrap_or_else(||{
+                            println!("cannot find function '{}'", function_name);
+                            self.exit(-1)
+                        });
+                        self.threads.push(new_coroutine);
+                    }
+                    bad_ref @ _ => {
+                        println!("cannot spawn corountine with non-callable: {:?}", bad_ref);
+                        self.exit(-1);
+                    }
+                }
+            },
+            Instruction::SendAsync => {
+
+            }
+            Instruction::ListenAsync => {
+                let listen_template = self.do_pop();
+                if let ObjRef::Object(_, ref object) = listen_template {
+                    self.event_manager.register_listener(*object, self.active_thread_id);
+                    self.cur_thread_mut().park();
+                } else {
+                    println!("cannot register an event listener with {:?}", listen_template);
+                    self.exit(-1);
+                }
+            }
             Instruction::Not => {
-                let obj = self.call_stack.active_exe().pop();
+                let obj = self.do_pop();
                 match obj {
                     ObjRef::Int(_, ref v) => {
                         let result = self.allocate_and_assign_int(!(**v));
-                        self.call_stack.active_exe().push(result);
+                        self.do_push(result);
                     },
                     ObjRef::Float(_, _) => panic!("type error: expected int but found float"),
                     ObjRef::String(_, _) => panic!("type error: expected int but found string"),
@@ -367,14 +431,14 @@ impl <'program> VM<'program> {
             Instruction::Modulo => {panic!("unsupported operation")},
             Instruction::BCompliment => {},
             Instruction::Dup => {
-                let tos = self.call_stack.active_exe().peek().clone();
-                self.call_stack.active_exe().push(tos);
+                let tos = self.cur_thread_mut().stack_mut().active_exe().peek().clone();
+                self.do_push(tos);
             },
             Instruction::Consume => {
-                self.call_stack.active_exe().pop_optional();
+                self.cur_thread_mut().stack_mut().active_exe().pop_optional();
             },
             Instruction::SwapTOS2WithTOS3 => {
-                self.call_stack.active_exe().swap_from_end(1, 2);
+                self.cur_thread_mut().stack_mut().active_exe().swap_from_end(1, 2);
             }
         }
 
@@ -383,11 +447,39 @@ impl <'program> VM<'program> {
         }
     }
 
+    fn run_scheduler(&mut self) {
+        self.advance_thread(); //ensure scheduler fairness -> always advance thread
+
+        let event = self.event_manager.find_event_for_thread(self.cur_thread().get_thread_id());
+        if let Some(event) = event {
+            let target_mem = self.heap.allocate(AllocType::Object);
+            if let ObjRef::Object(_, ref mut object) = &target_mem {
+                event.store_into_ox_obj(object);
+            }
+            self.do_push(target_mem); //listen expr leaves this with stack
+            self.cur_thread_mut().unpark();
+        }
+    }
+
+    fn advance_thread(&mut self) {
+        if self.threads.len() == 1 {
+            return;
+        }
+
+        if self.active_thread_index == self.threads.len() - 1 {
+            self.active_thread_index = 0;
+        } else {
+            self.active_thread_index += 1;
+        }
+
+        self.active_thread_id = self.cur_thread().get_thread_id();
+    }
+
     #[inline]
     fn do_concat(&mut self) {
         vm_debug!("Concat");
-        let first = self.call_stack.active_exe().pop();
-        let second = self.call_stack.active_exe().pop();
+        let first = self.do_pop();
+        let second = self.do_pop();
 
         match (&second, &first) {
             (ObjRef::String(_, left), ObjRef::String(_, right)) => concat_branch!(self, left, right),
@@ -400,7 +492,7 @@ impl <'program> VM<'program> {
             (ObjRef::Float(_, left), ObjRef::Int(_, right)) => concat_branch!(self, left, right),
             (ObjRef::Int(_, left), ObjRef::Float(_, right)) => concat_branch!(self, left, right),
             _ => {
-                self.call_stack.active_frame().print_debug_info();
+                self.cur_thread_mut().stack_mut().active_frame().print_debug_info();
                 println!("concat type error: {:?} and {:?} cannot be concatenated ", second, first);
                 exit(0);
             }

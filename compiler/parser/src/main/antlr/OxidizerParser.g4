@@ -55,6 +55,7 @@ stringPart
 literall
     : INTEGER # IntLit
     | FLOAT # FloatLit
+    | (KW_TRUE | KW_FALSE) #BoolLit
     | string # StringLit
     ;
 

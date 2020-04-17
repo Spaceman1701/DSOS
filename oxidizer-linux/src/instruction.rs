@@ -41,8 +41,8 @@ pub enum Instruction {
 
     Spawn,
 
-    WriteChannel,
-    ReadChannel,
+    SendAsync,
+    ListenAsync,
 
     Not,
     XOr,
@@ -92,8 +92,8 @@ impl Instruction {
             0x1A => Some((PostEvent, 1 as usize)),
             0x1B => Some((WaitEvent, 1 as usize)),
             0x1C => Some((Spawn, 1 as usize)),
-            0x1D => Some((WriteChannel, 1 as usize)),
-            0x1E => Some((ReadChannel, 1 as usize)),
+            0x1D => Some((SendAsync, 1 as usize)),
+            0x1E => Some((ListenAsync, 1 as usize)),
             0x1F => Some((Not, 1 as usize)),
             0x20 => Some((XOr, 1 as usize)),
             0x21 => Some((BAnd, 1 as usize)),

@@ -118,7 +118,16 @@ class BytecodeGenerator {
           loopWatcherStack.top.breaks.addOne(NoOp >>: this)
         case ContinueStmt =>
           loopWatcherStack.top.continues.addOne(NoOp >>: this)
-        case SpawnStmt(expr) => ???
+        case SpawnStmt(expr) => {
+          expr match {
+            case Var(ident) => {
+              val ptr = stringConstants.add(ident)
+              LoadConstStr(new U32(ptr.toInt)) >>: this
+              SpawnCoroutine >>: this
+            }
+            case _ => ???
+          }
+        }
       }
     }
   }
@@ -197,8 +206,14 @@ class BytecodeGenerator {
       case Binop(first, second, op) => emitBinOp(first, second, op)
       case Ternary(cond, ifExpr, elseExpr) =>
         emitIfElse(cond, List(ExprStmt(ifExpr)), List(), Some(List(ExprStmt(elseExpr))))
-      case SendExpr(expr) => ???
-      case ListenExpr(expr) => ???
+      case SendExpr(expr) => {
+        emitExpr(expr)
+        SendAsync >>: this
+      }
+      case ListenExpr(expr) => {
+        emitExpr(expr)
+        ListenAsync >>: this
+      }
     }
   }
 
