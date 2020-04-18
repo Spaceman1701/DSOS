@@ -10,6 +10,8 @@ use crate::program::FieldData;
 use crate::coroutine::Coroutine;
 use crate::event_manager::{EventManager, Event};
 use std::sync::mpsc::Sender;
+use std::collections::HashMap;
+use std::io::Write;
 
 macro_rules! numeric_binop {
     ($operator: tt, $vm: expr) => {
@@ -119,7 +121,9 @@ pub struct VM<'a> {
     active_thread_id: usize,
     active_thread_index: usize,
     event_manager: EventManager,
-    event_buffer: Vec<Event>
+    event_buffer: Vec<Event>,
+
+    events_in_progress: HashMap<i64, Event>
 }
 
 impl <'program> VM<'program> {
@@ -132,6 +136,7 @@ impl <'program> VM<'program> {
             active_thread_id: 0,
             event_manager: EventManager::new(),
             event_buffer: vec![],
+            events_in_progress: HashMap::new(),
         }
     }
 
@@ -398,6 +403,38 @@ impl <'program> VM<'program> {
                 }
             },
             Instruction::SendAsync => {
+                let obj = self.do_pop();
+
+                match obj {
+                    ObjRef::Object(_, ref object) => {
+                        if object.fields.contains_key("status") && object.fields.contains_key("body") {
+                            let status_ref = object.fields.get("status").unwrap();
+                            let body_ref = object.fields.get("body").unwrap();
+                            let id_ref = object.fields.get("requestId").unwrap();
+
+                            match (status_ref, body_ref, id_ref) {
+                                (ObjRef::Int(_, status), ObjRef::String(_, body), ObjRef::Int(_, id)) => {
+                                    if let Some(Event::HttpEvent(_, mut request)) = self.events_in_progress.remove(id) {
+
+                                        let http_response = format!("HTTP/1.1 {}\r\n{}\r\n", status, body);
+
+                                        request.connection.write(http_response.as_bytes());
+                                        request.connection.flush();
+
+                                    }
+                                }
+                                _ => {
+                                    println!("can't send that");
+                                    self.exit(-1);
+                                }
+                            }
+                        }
+                    },
+                    bad_ref @ _ => {
+                        println!("cannot send {:?}", bad_ref);
+                        self.exit(-1);
+                    }
+                }
 
             }
             Instruction::ListenAsync => {
@@ -458,13 +495,17 @@ impl <'program> VM<'program> {
         if let Some(event) = event {
             let mut target_mem = self.heap.allocate(AllocType::Object);
             if let ObjRef::Object(_, ref mut object) = &mut target_mem {
-                match event {
+                match &event {
                     Event::AllThreadsFinished => {},
-                    Event::HttpEvent(request) => {
+                    Event::HttpEvent(event_id, request) => {
                         let method = self.heap.allocate_str(&request.method);
                         let path = self.heap.allocate_str(&request.path);
+                        let id = self.allocate_and_assign_int(*event_id);
                         object.fields.insert("method", method);
                         object.fields.insert("path", path);
+                        object.fields.insert("id", id);
+
+                        self.events_in_progress.insert(*event_id, event);
                     },
                 }
             }

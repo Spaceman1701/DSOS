@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 pub enum Event {
     AllThreadsFinished,
-    HttpEvent(http::HttpRequest),
+    HttpEvent(i64, http::HttpRequest),
 }
 
 pub enum EventListener {
@@ -77,7 +77,7 @@ impl EventManager {
     }
 
     pub fn load_events(&mut self) {
-        for event in self.receiver.iter() { //copy all events into buffer
+        for event in self.receiver.try_iter() { //copy all events into buffer
             self.event_buffer.push(event);
         }
     }
@@ -86,7 +86,10 @@ impl EventManager {
         let mut found = None;
         for (index, event) in self.event_buffer.iter().enumerate() {
             if let Some(event_listener) = self.event_listeners.get(&thread_id) {
-                found = Some(index)
+                if event.matches_listener(event_listener) {
+                    println!("found event listener");
+                    found = Some(index)
+                }
             }
         }
 
@@ -102,7 +105,7 @@ impl EventManager {
 impl Event {
     pub fn matches_listener(&self, listener: &EventListener) -> bool {
         match (self, listener) {
-            (Event::HttpEvent(request), EventListener::Http(template)) => {
+            (Event::HttpEvent(_, request), EventListener::Http(template)) => {
                 request.path == template.path && request.method == template.method
             }
 

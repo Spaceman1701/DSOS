@@ -14,6 +14,19 @@ class AllThreadsDoneEventTemplate {
     def constructor() {}
 }
 
+class HttpResponse {
+    status = 0;
+    body = 0;
+    requestId = 0;
+
+    def constructor(status, body, request, self) {
+        self.status = status;
+        self.body = body;
+
+        self.requestId = request.id;
+    }
+}
+
 //Start: Program
 def main() {
     println("starting server");
@@ -28,5 +41,7 @@ def fooBarHandler() {
 
         println(request.path);
         println(request.method);
+
+        send new HttpResponse(200, "Hi everyone, this website runs on Oxidizer", request);
     }
 }

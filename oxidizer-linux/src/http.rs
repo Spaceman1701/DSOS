@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 use httparse::Request;
+use std::net::TcpStream;
 
 #[derive(Debug)]
 pub struct HttpRequest {
     pub method: String,
     pub path: String,
     pub headers: HashMap<String, String>,
-    pub body: Option<String>
+    pub body: Option<String>,
+    pub connection: TcpStream,
 }
 
 #[derive(Debug)]
@@ -17,12 +19,13 @@ pub struct HttpResponse {
 }
 
 impl HttpRequest {
-    pub fn from_request(req: &Request, body: String) -> HttpRequest {
+    pub fn from_request(req: &Request, body: String, connection: TcpStream) -> HttpRequest {
         let mut result = HttpRequest {
             method: String::from(req.method.unwrap()),
             path: String::from(req.path.unwrap()),
             headers: HashMap::new(),
-            body: Some(body)
+            body: Some(body),
+            connection,
         };
 
         for ref header in req.headers.iter() {
