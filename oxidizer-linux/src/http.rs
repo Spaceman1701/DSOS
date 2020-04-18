@@ -13,7 +13,7 @@ pub struct HttpRequest {
 
 #[derive(Debug)]
 pub struct HttpResponse {
-    pub status: u32,
+    pub status: i64,
     pub headers: HashMap<String, String>,
     pub body: String
 }
@@ -48,7 +48,15 @@ impl HttpResponse {
         }
     }
 
+
     pub fn to_bytes(&self) -> Vec<u8> {
-        format!("HTTP/1.1 {}\r\n\r\n{}", self.status, self.body).into_bytes()
+        let mut request = format!("HTTP/1.1 {}\r\n", self.status);
+
+        for (name, value) in &self.headers {
+            request.push_str(format!("{}: {}\n", name, value).as_str());
+        }
+
+
+        format!("{}\r\n{}\r\n", request, self.body).into_bytes()
     }
 }

@@ -12,6 +12,7 @@ use crate::event_manager::{EventManager, Event};
 use std::sync::mpsc::Sender;
 use std::collections::HashMap;
 use std::io::Write;
+use crate::http::HttpResponse;
 
 macro_rules! numeric_binop {
     ($operator: tt, $vm: expr) => {
@@ -416,9 +417,13 @@ impl <'program> VM<'program> {
                                 (ObjRef::Int(_, status), ObjRef::String(_, body), ObjRef::Int(_, id)) => {
                                     if let Some(Event::HttpEvent(_, mut request)) = self.events_in_progress.remove(id) {
 
-                                        let http_response = format!("HTTP/1.1 {}\r\n\r\n{}\r\n", status, body);
+                                        let mut response = HttpResponse::new();
 
-                                        request.connection.write(http_response.as_bytes());
+                                        response.status = **status;
+                                        response.body = String::from(*body);
+                                        response.headers.insert(String::from("Content-Type"), String::from("text/plain; charset=UTF-8"));
+
+                                        request.connection.write(&response.to_bytes());
                                         request.connection.flush();
 
                                     }
