@@ -416,7 +416,7 @@ impl <'program> VM<'program> {
                                 (ObjRef::Int(_, status), ObjRef::String(_, body), ObjRef::Int(_, id)) => {
                                     if let Some(Event::HttpEvent(_, mut request)) = self.events_in_progress.remove(id) {
 
-                                        let http_response = format!("HTTP/1.1 {}\r\n{}\r\n", status, body);
+                                        let http_response = format!("HTTP/1.1 {}\r\n\r\n{}\r\n", status, body);
 
                                         request.connection.write(http_response.as_bytes());
                                         request.connection.flush();
