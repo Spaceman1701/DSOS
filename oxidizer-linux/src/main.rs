@@ -6,6 +6,7 @@ use program::Program;
 use vm::VM;
 use std::net::{TcpStream, TcpListener};
 use std::io::Error;
+use crate::io_handler::IOHandler;
 
 #[macro_use] mod debug_macros;
 mod program;
@@ -17,6 +18,8 @@ mod call_stack;
 mod http;
 mod coroutine;
 mod event_manager;
+mod built_in;
+mod io_handler;
 
 fn main() {
     let _ = load_file();
@@ -36,29 +39,22 @@ fn load_file() -> io::Result<()> {
         exit(-1);
     }
 
-    let mut listener = TcpListener::bind("0.0.0.0:9000").unwrap();
-    for mut result in listener.incoming() {
-        match result {
-            Ok(ref mut stream) => {
-                let mut tcp_buf = [0; 512];
-                stream.read(&mut tcp_buf);
-
-                let request_str = String::from_utf8_lossy(&mut tcp_buf);
-                println!("{}", request_str);
-
-                let response = "HTTP/1.1 200 OK\r\n\r\n<!DOCTYPE html><html><body>Hello, World</body></html>";
-
-                stream.write(response.as_bytes());
-                stream.flush().unwrap();
-            },
-            Err(_) => {panic!()},
-        }
-    }
-
     let program = Program::new(buffer);
 
+    let tcp_listener = match TcpListener::bind("0.0.0.0:9000") {
+        Ok(l) => l,
+        _ => {
+            println!("error binding to tcp socket");
+            exit(-1);
+        }
+    };
 
     let mut vm = VM::new(&program);
+
+    let io_sender = vm.get_event_sender();
+
+    let io_thread_handler = IOHandler::new(tcp_listener, io_sender);
+    io_thread_handler.start();
 
     vm.execute();
 

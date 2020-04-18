@@ -8,8 +8,8 @@ use crate::call_stack::{CallStack};
 #[macro_use] use crate::debug_macros;
 use crate::program::FieldData;
 use crate::coroutine::Coroutine;
-use crate::event_manager::{EventManager, EventData, Event};
-
+use crate::event_manager::{EventManager, Event};
+use std::sync::mpsc::Sender;
 
 macro_rules! numeric_binop {
     ($operator: tt, $vm: expr) => {
@@ -447,14 +447,26 @@ impl <'program> VM<'program> {
         }
     }
 
+    pub fn get_event_sender(&self) -> Sender<Event>{
+        self.event_manager.get_new_sender()
+    }
+
     fn run_scheduler(&mut self) {
         self.advance_thread(); //ensure scheduler fairness -> always advance thread
-
+        self.event_manager.load_events();
         let event = self.event_manager.find_event_for_thread(self.cur_thread().get_thread_id());
         if let Some(event) = event {
-            let target_mem = self.heap.allocate(AllocType::Object);
-            if let ObjRef::Object(_, ref mut object) = &target_mem {
-                event.store_into_ox_obj(object);
+            let mut target_mem = self.heap.allocate(AllocType::Object);
+            if let ObjRef::Object(_, ref mut object) = &mut target_mem {
+                match event {
+                    Event::AllThreadsFinished => {},
+                    Event::HttpEvent(request) => {
+                        let method = self.heap.allocate_str(&request.method);
+                        let path = self.heap.allocate_str(&request.path);
+                        object.fields.insert("method", method);
+                        object.fields.insert("path", path);
+                    },
+                }
             }
             self.do_push(target_mem); //listen expr leaves this with stack
             self.cur_thread_mut().unpark();
