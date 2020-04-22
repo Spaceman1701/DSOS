@@ -131,7 +131,6 @@ impl <'heap> Heap<'heap> {
         self.allocator.allocated_count += 1;
 
         let layout = self.allocator.allocate(amount);
-
         unsafe {
             match &kind {
                 AllocType::Int => {
@@ -223,7 +222,7 @@ impl <'heap> Heap<'heap> {
     fn expand_memory(&mut self) {
         let current_len = self.memory.len();
         self.memory.resize_with(current_len * 2, || 0);
-        vm_debug!("memory size doubled to {}", self.memory.len());
+        println!("memory size doubled to {}", self.memory.len());
     }
 }
 

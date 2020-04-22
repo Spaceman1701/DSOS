@@ -3,11 +3,12 @@ use crate::object::ObjRef;
 pub struct CallStack<'heap> {
     stack: Vec<StackFrame<'heap>>,
     exe_stack: Vec<ExecutionStack<'heap>>,
-    ip_stack: Vec<usize>
+    ip_stack: Vec<usize>,
 }
 
 pub struct StackFrame<'heap> {
-    locals: Vec<ObjRef<'heap>>
+    locals: Vec<ObjRef<'heap>>,
+    function_name: &'heap str,
 }
 
 pub struct ExecutionStack<'heap> {
@@ -17,14 +18,14 @@ pub struct ExecutionStack<'heap> {
 impl <'heap> CallStack <'heap> {
     pub fn new() -> CallStack<'heap> {
         CallStack {
-            stack: vec![StackFrame::new()],
+            stack: vec![StackFrame::new("main")],
             exe_stack: vec![ExecutionStack::new()],
-            ip_stack: vec![0]
+            ip_stack: vec![0],
         }
     }
 
-    pub fn push_new(&mut self, new_ip: usize) {
-        self.stack.push(StackFrame::new());
+    pub fn push_new(&mut self, new_ip: usize, name: &'heap str) {
+        self.stack.push(StackFrame::new(name));
         self.exe_stack.push(ExecutionStack::new());
         self.ip_stack.push(new_ip);
     }
@@ -61,15 +62,20 @@ impl <'heap> CallStack <'heap> {
             Some(value) => value
         }
     }
+
+    pub fn exe_stack_len(&self) -> usize {
+        self.exe_stack.len()
+    }
 }
 
 impl <'heap> StackFrame<'heap> {
-    pub fn new() -> StackFrame<'heap> {
+    pub fn new(function_name: &'heap str) -> StackFrame<'heap> {
 
         let initial = Vec::with_capacity(64);
 
         StackFrame {
-            locals: initial
+            locals: initial,
+            function_name,
         }
     }
 
@@ -92,7 +98,7 @@ impl <'heap> StackFrame<'heap> {
     }
 
     pub fn print_debug_info(&self) {
-        println!("---- STACK FRAME ----");
+        println!("---- STACK FRAME (fn: {}) (len: {}) ----",self.function_name , self.locals.len());
         for (index, value) in self.locals.iter().enumerate() {
             println!("{} -- {:?}", index, value);
         }
@@ -126,5 +132,9 @@ impl <'heap> ExecutionStack<'heap> {
         let a_from_end = self.stack.len() - 1 - a;
         let b_from_end = self.stack.len() - 1 - b;
         self.stack.swap(a_from_end, b_from_end);
+    }
+
+    pub fn len(&self) -> usize {
+        self.stack.len()
     }
 }

@@ -83,7 +83,20 @@ macro_rules! comparison {
                 $vm.cur_thread_mut().stack_mut().active_exe().push(result);
             }
 
-            _ => exit(-1)
+            (ObjRef::Object(_, _), _) => {
+                let result = $vm.allocate_and_assign_int(0);
+                $vm.cur_thread_mut().stack_mut().active_exe().push(result);
+            }
+
+            (_, ObjRef::Object(_, _)) => {
+                let result = $vm.allocate_and_assign_int(0);
+                $vm.cur_thread_mut().stack_mut().active_exe().push(result);
+            }
+
+            _ => {
+                println!("can't do comparison with {:?} and {:?}", first, second);
+                $vm.exit(-1);
+            }
         }
     }
     }
@@ -100,7 +113,10 @@ macro_rules! int_only_binop {
                 let result = $vm.allocate_and_assign_int(value);
                 $vm.cur_thread_mut().stack_mut().active_exe().push(result);
             }
-            _ => exit(-1)
+            _ => {
+                println!("can't do int only binop with {:?} and {:?}", first, second);
+                $vm.exit(-1);
+            }
         }
         }
     }
@@ -152,7 +168,13 @@ impl <'program> VM<'program> {
     }
 
     fn do_pop(&mut self) -> ObjRef<'program> {
-        self.cur_thread_mut().stack_mut().active_exe().pop()
+        match self.cur_thread_mut().stack_mut().active_exe().pop_optional() {
+            Some(res) => res,
+            None => {
+                println!("nothing on exe stack to pop");
+                self.exit(-1)
+            }
+        }
     }
 
     fn do_push(&mut self, obj: ObjRef<'program>) {
@@ -167,6 +189,7 @@ impl <'program> VM<'program> {
     fn exit(&self, code: i32) -> !  {
         if code != 0 {
             self.cur_thread().stack().read_only_frame().print_debug_info();
+            panic!()
         }
         exit(code);
     }
@@ -227,8 +250,13 @@ impl <'program> VM<'program> {
             },
             Instruction::LoadVar(ptr) => {
                 vm_debug!("LoadVar({})", ptr);
-                let obj = self.cur_thread_mut().stack_mut().active_frame().get(ptr).unwrap();
-                self.do_push(obj);
+                match self.cur_thread_mut().stack_mut().active_frame().get(ptr) {
+                    Some(obj) => self.do_push(obj),
+                    None => {
+                        println!("no variable at stack index {}", ptr);
+                        self.exit(-1);
+                    }
+                }
             },
             Instruction::CreateObject => {
                 let obj_name = self.do_pop();
@@ -337,7 +365,8 @@ impl <'program> VM<'program> {
                                 Some(ptr) => {
                                     control_change = true;
                                     (*self.ip()) = *self.ip() + skip;
-                                    self.cur_thread_mut().stack_mut().push_new(*ptr);
+                                    //println!("calling {}", *fun_name);
+                                    self.cur_thread_mut().stack_mut().push_new(*ptr, *fun_name);
                                     for (i, p) in (&params).into_iter().enumerate() {
                                         self.cur_thread_mut().stack_mut().active_frame().store(p, i as u16);
                                     }
@@ -370,9 +399,13 @@ impl <'program> VM<'program> {
                 control_change = true;
                 match self.cur_thread_mut().stack_mut().active_exe().pop_optional() {
                     None => {
+                        //println!("returning with no values");
+                        //self.cur_thread().stack().read_only_frame().print_debug_info();
                         if !self.cur_thread_mut().stack_mut().pop() {
                             exit(0)
                         }
+                        //println!("returning with no values (DONE)");
+                        //self.cur_thread().stack().read_only_frame().print_debug_info();
                     }
                     Some(value) => {
                         if !self.cur_thread_mut().stack_mut().pop() {
@@ -459,9 +492,10 @@ impl <'program> VM<'program> {
                         let result = self.allocate_and_assign_int(!(**v));
                         self.do_push(result);
                     },
-                    ObjRef::Float(_, _) => panic!("type error: expected int but found float"),
-                    ObjRef::String(_, _) => panic!("type error: expected int but found string"),
-                    ObjRef::Object(_, _) => panic!("type error: expected int but found object"),
+                    _ => {
+                        let result = self.allocate_and_assign_int(1);
+                        self.do_push(result);
+                    }
                 }
             },
             Instruction::XOr => {int_only_binop!(^, self)},
@@ -470,7 +504,7 @@ impl <'program> VM<'program> {
             Instruction::LeftShift => {int_only_binop!(<<, self)},
             Instruction::RightShift => {int_only_binop!(>>, self)},
             Instruction::URightShift => {int_only_binop!(<<, self)},
-            Instruction::Modulo => {panic!("unsupported operation")},
+            Instruction::Modulo => {int_only_binop!(%, self)},
             Instruction::BCompliment => {},
             Instruction::Dup => {
                 let tos = self.cur_thread_mut().stack_mut().active_exe().peek().clone();
@@ -515,7 +549,7 @@ impl <'program> VM<'program> {
                 }
             }
             self.do_push(target_mem); //listen expr leaves this with stack
-            self.cur_thread_mut().unpark();
+             self.cur_thread_mut().unpark();
         }
     }
 

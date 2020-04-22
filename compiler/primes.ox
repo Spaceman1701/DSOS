@@ -37,33 +37,42 @@ class List {
 
     def insert(self, obj) {
         node = new ListNode(obj);
-        if head == 0 {
-            head = node;
-            tail = node;
+        if self.head == 0 {
+            self.head = node;
+            self.tail = node;
         } else {
             self.tail.next = node;
             node.prev = self.tail;
+            self.tail = node;
         }
     }
 
-    def get(self, index) {
-        if index == 0 {
-            if self.head != 0 {
-                return self.head.value;
-            } else {
-                return 0;
-            }
-        }
+    def find_node(self, index) {
         i = 0;
         cur = self.head;
-        while cur.next != 0 {
-            i = i + 1;
-            cur = cur.next;
+        while not (cur.next == 0) {
             if i == index {
                 return cur;
             }
+            cur = cur.next;
+            i = i + 1;
         }
         return 0;
+    }
+
+    def get(self, index) {
+        node = self.find_node(index);
+        if node == 0 {
+            return 0;
+        }
+        return node.value;
+    }
+
+    def set(self, index, value) {
+        node = self.find_node(index);
+        if node {
+            node.value = value;
+        }
     }
 
     def remove(self, index) {
@@ -114,31 +123,29 @@ class ListNode {
 
 //Start: Program
 def main() {
-    println("starting server");
+    n = 5;
+    prime_count = 0;
+    i = 2;
+    while i < n {
 
-    spawn fooBarHandler;
-    spawn helloWorldHandler;
+        if check_if_prime(i) {
+            prime_count = prime_count + 1;
+        }
 
-    listen new AllThreadsDoneEventTemplate(); //vm will send "all threads done" event when all coroutines exit
-
-}
-
-
-def fooBarHandler() {
-    while true {
-        request = listen new HttpEventTemplate("GET", "/foo/bar");
-
-        println(request.path);
-        println(request.method);
-
-        send new HttpResponse(200, "Hi everyone, this website runs on Oxidizer", request);
+        i = i + 1;
     }
+
+    println(prime_count);
 }
 
-def helloWorldHandler() {
-    while true {
-        request = listen new HttpEventTemplate("GET", "/hello");
 
-        send new HttpResponse(200, "Hello, World", request);
+def check_if_prime(n) {
+    i = 2;
+    while i < (n / 2) {
+        if n % i == 0 {
+            return false;
+        }
     }
+    return true;
 }
+
